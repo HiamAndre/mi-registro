@@ -200,10 +200,37 @@ textarea {
 .meal-form:last-child { border-bottom: none; }
 .meal-icon { font-size: 1.5rem; padding-top: 0.2rem; }
 .meal-content { flex: 1; }
-.meal-title { margin-bottom: 0.4rem; }
+.meal-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+.meal-title { margin-bottom: 0; }
 .meal-inputs-container { display: flex; gap: 0.5rem; }
 .meal-input { flex: 2; }
 .meal-cal-input { flex: 1; max-width: 110px; }
+
+.btn-ai {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    border: none;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.2s ease;
+}
+
+.btn-ai:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.btn-ai:active {
+    transform: translateY(0);
+}
 
 .activity-grid {
     display: grid;
@@ -359,3 +386,5 @@ button:hover { opacity: 0.9; }
 
 .auth-card h2 { margin-bottom: 1.5rem; text-align: center; }
 .auth-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; text-align: center; }
+.auth-toggle { margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+.btn-link { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0 0.25rem; }

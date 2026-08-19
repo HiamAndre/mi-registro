@@ -1,9 +1,10 @@
 /* =========================================================
-   MI REGISTRO — APP.JS (SUPABASE + AUTHENTICATION)
+   MI REGISTRO — APP.JS (SUPABASE + AUTHENTICATION + GEMINI AI)
    ========================================================= */
 
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
+const GEMINI_API_KEY = "TU_GEMINI_API_KEY_AQUI"; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -11,6 +12,7 @@ const DEFAULT_CALORIE_GOAL = 2000;
 const FASTING_GOAL = 16;
 let currentProfile = null;
 let currentUser = null;
+let isSignUpMode = false;
 
 const meals = [
     { id: "breakfast", name: "Desayuno", icon: "🌅" },
@@ -46,6 +48,60 @@ function emptyRecord() {
 }
 
 /* ---------------------------------------------------------
+   INTEGRACIÓN CON GEMINI IA (CÁLCULO DE CALORÍAS)
+   --------------------------------------------------------- */
+
+async function estimateCaloriesAI(mealId) {
+    const textInput = $(`${mealId}Text`);
+    const calInput = $(`${mealId}Cal`);
+    const description = textInput?.value.trim();
+
+    if (!description) {
+        alert("Escribí qué comiste primero para poder estimar las calorías.");
+        return;
+    }
+
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "TU_GEMINI_API_KEY_AQUI") {
+        alert("Debes configurar tu GEMINI_API_KEY en app.js");
+        return;
+    }
+
+    showToast("✨ Consultando a la IA...");
+
+    try {
+        const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+            const responseText = result.candidates[0].content.parts[0].text.trim();
+            const estimatedCalories = parseInt(responseText.replace(/\D/g, ''), 10);
+
+            if (!isNaN(estimatedCalories)) {
+                calInput.value = estimatedCalories;
+                updateSummary();
+                showToast(`✨ Estimación: ${estimatedCalories} kcal`);
+            } else {
+                showToast("❌ No se pudo interpretar la respuesta");
+            }
+        } else {
+            showToast("❌ Error al consultar la IA");
+        }
+    } catch (error) {
+        console.error("Error Gemini API:", error);
+        showToast("❌ Error de conexión con la IA");
+    }
+}
+
+/* ---------------------------------------------------------
    AUTENTICACIÓN Y SESIONES
    --------------------------------------------------------- */
 
@@ -57,28 +113,36 @@ function setupAuth() {
         const errorMsg = $("authError");
         errorMsg.textContent = "";
 
-        // Mantenemos el mapeo a @gmail.com internamente
         const email = userInput.includes('@') ? userInput : `${userInput}@gmail.com`;
 
-        // Solo permitir Iniciar Sesión con usuarios existentes
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-            errorMsg.textContent = "❌ Usuario o contraseña incorrectos";
+        if (isSignUpMode) {
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            } else {
+                alert("¡Usuario creado con éxito! Ya podés iniciar sesión.");
+                toggleAuthMode();
+            }
+        } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            }
         }
     });
+
+    $("btnToggleAuthMode")?.addEventListener("click", toggleAuthMode);
 
     $("logoutBtn")?.addEventListener("click", async () => {
         await supabaseClient.auth.signOut();
     });
 
-    // Escuchar cambios de sesión en tiempo real
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session) {
             currentUser = session.user;
             $("authModal").style.display = "none";
             $("appContainer").style.display = "flex";
             
-            // Muestra solo el nombre de usuario limpio en la barra
             const cleanUser = currentUser.email.split('@')[0];
             $("userEmailBadge").textContent = `👤 ${cleanUser}`;
             
@@ -89,6 +153,15 @@ function setupAuth() {
             $("appContainer").style.display = "none";
         }
     });
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    $("authTitle").textContent = isSignUpMode ? "📝 Crear Cuenta" : "🔑 Iniciar Sesión";
+    $("authSubmitBtn").textContent = isSignUpMode ? "Registrarse" : "Entrar";
+    $("authToggleText").textContent = isSignUpMode ? "¿Ya tenés cuenta?" : "¿No tenés cuenta?";
+    $("btnToggleAuthMode").textContent = isSignUpMode ? "Iniciá sesión" : "Registrate acá";
+    $("authError").textContent = "";
 }
 
 /* ---------------------------------------------------------
@@ -426,9 +499,14 @@ function createMeals() {
         wrapper.innerHTML = `
             <div class="meal-icon">${m.icon}</div>
             <div class="meal-content">
-                <div class="meal-title"><strong>${m.name}</strong></div>
+                <div class="meal-header-row">
+                    <div class="meal-title"><strong>${m.name}</strong></div>
+                    <button type="button" class="btn-ai" onclick="estimateCaloriesAI('${m.id}')" title="Calcular calorías con IA">
+                        ✨ Estimar con IA
+                    </button>
+                </div>
                 <div class="meal-inputs-container">
-                    <textarea id="${m.id}Text" class="meal-input" placeholder="¿Qué comiste?"></textarea>
+                    <textarea id="${m.id}Text" class="meal-input" placeholder="¿Qué comiste? (ej: 2 huevos revueltos con 1 tostada)"></textarea>
                     <input id="${m.id}Cal" class="meal-cal-input" type="number" min="0" placeholder="Calorías">
                 </div>
             </div>
