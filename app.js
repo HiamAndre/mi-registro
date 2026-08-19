@@ -76,11 +76,9 @@ async function estimateCaloriesAI(mealId) {
 
     showToast("✨ Consultando a la IA...");
 
-    // Modelos a probar en orden por si alguno falla o expira
+    // Lista de modelos actualizada al modelo actual vigente
     const availableModels = [
-        "gemini-1.5-flash",
-        "gemini-2.0-flash",
-        "gemini-2.5-flash"
+        "gemini-3.6-flash"
     ];
 
     const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
