@@ -160,7 +160,7 @@
             </div>
         </section>
 
-        <!-- PERFIL -->
+        <!-- PERFIL Y CONFIGURACIÓN -->
         <section class="card">
             <h2>⚙️ Perfil y Meta de Calorías</h2>
             <div class="profile-grid">
@@ -194,6 +194,7 @@
                     </select>
                 </div>
             </div>
+
             <div class="profile-actions">
                 <button id="btnCalcSuggested" class="btn-secondary">🧮 Calcular Meta Sugerida</button>
                 <div class="manual-goal-box">
@@ -201,7 +202,19 @@
                     <button id="btnSaveManual" class="btn-secondary">Guardar Meta</button>
                 </div>
             </div>
-            <p class="muted" style="margin-top: 0.5rem;">Estado: <span id="profileStatusBadge" class="badge">Estándar (2000 kcal)</span></p>
+            <p class="muted" style="margin-top: 0.5rem; margin-bottom: 1.5rem;">Estado: <span id="profileStatusBadge" class="badge">Estándar (2000 kcal)</span></p>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+
+            <!-- CONFIGURACIÓN DE GEMINI API KEY -->
+            <div class="input-group full-width">
+                <label for="userApiKey">🔑 API Key de Gemini IA (Guardado Local):</label>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.2rem;">
+                    <input type="password" id="userApiKey" placeholder="Ingresá tu API Key (AIzaSy...)">
+                    <button type="button" id="btnSaveApiKey" class="btn-secondary">Guardar Key</button>
+                </div>
+                <p class="muted" style="margin-top: 0.3rem;">La clave se guarda únicamente en tu navegador y no se expone en el código fuente público.</p>
+            </div>
         </section>
 
         <!-- ACCIONES -->
