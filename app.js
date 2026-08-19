@@ -1,108 +1,99 @@
-// Configuración de Supabase
-const SUPABASE_URL = "https://tu-supabase-id.supabase.co"; 
-const SUPABASE_ANON_KEY = "tu-supabase-anon-key";
-const supabaseClient = typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* =========================================================
+   MI REGISTRO — APP.JS (SUPABASE + AUTHENTICATION + GEMINI AI)
+   ========================================================= */
 
-// Helper DOM
-const $ = (id) => document.getElementById(id);
+const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
 
+let GEMINI_API_KEY = ""; 
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const DEFAULT_CALORIE_GOAL = 2000;
+const FASTING_GOAL = 16;
+let currentProfile = null;
 let currentUser = null;
-let userProfile = { calorieGoal: 2000, apiKey: "" };
-let fastingInterval = null;
-let fastingStartTime = null;
-let myChart = null;
+let isSignUpMode = false;
 
-// Inicialización
-document.addEventListener("DOMContentLoaded", () => {
-    initDatePicker();
-    setupEventListeners();
-    checkAuth();
-    loadSettings();
-});
+const meals = [
+    { id: "breakfast", name: "Desayuno", icon: "🌅" },
+    { id: "lunch", name: "Almuerzo", icon: "🥗" },
+    { id: "snack", name: "Merienda", icon: "☕" },
+    { id: "dinner", name: "Cena", icon: "🍽️" },
+    { id: "other", name: "Otros", icon: "🍎" }
+];
 
-function initDatePicker() {
-    const today = new Date().toISOString().split("T")[0];
-    const picker = $("datePicker");
-    if (picker) {
-        picker.value = today;
-        picker.addEventListener("change", updateEverything);
-    }
+function $(id) { return document.getElementById(id); }
+
+function today() {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function getSelectedDate() {
-    return $("datePicker")?.value || new Date().toISOString().split("T")[0];
+function getSelectedDate() { return $("date")?.value || today(); }
+
+function formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString + "T12:00:00");
+    return date.toLocaleDateString("es-UY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-function formatDate(dateStr) {
-    const date = new Date(dateStr + "T12:00:00");
-    return date.toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function setupEventListeners() {
-    $("openSettingsBtn")?.addEventListener("click", () => $("settingsModal").style.display = "flex");
-    $("closeSettingsBtn")?.addEventListener("click", () => $("settingsModal").style.display = "none");
-    $("saveSettingsBtn")?.addEventListener("click", saveSettings);
-    $("toggleThemeBtn")?.addEventListener("click", toggleTheme);
-    
-    $("gymToggleBtn")?.addEventListener("click", () => {
-        const btn = $("gymToggleBtn");
-        const active = btn.dataset.active === "true";
-        btn.dataset.active = !active;
-        btn.textContent = !active ? "🏋️ Gimnasio: SÍ" : "🏋️ Gimnasio: NO";
-        btn.classList.toggle("btn-primary", !active);
-        autoSave();
-    });
-
-    $("runToggleBtn")?.addEventListener("click", () => {
-        const btn = $("runToggleBtn");
-        const active = btn.dataset.active === "true";
-        btn.dataset.active = !active;
-        btn.textContent = !active ? "🏃 Carrera: SÍ" : "🏃 Carrera: NO";
-        btn.classList.toggle("btn-primary", !active);
-        autoSave();
-    });
-
-    $("fastingStartBtn")?.addEventListener("click", startFasting);
-    $("fastingStopBtn")?.addEventListener("click", stopFasting);
-    $("statsFilter")?.addEventListener("change", loadAdvancedStats);
-
-    // Guardado automático en inputs
-    const inputs = document.querySelectorAll("textarea, input[type='number']");
-    inputs.forEach(input => input.addEventListener("input", debounce(autoSave, 800)));
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
+function emptyRecord() {
+    return {
+        breakfast: "", breakfastCal: 0, lunch: "", lunchCal: 0,
+        snack: "", snackCal: 0, dinner: "", dinnerCal: 0,
+        other: "", otherCal: 0, gym: false, gymMinutes: 0,
+        running: false, runningKm: 0, runningMinutes: 0,
+        activityNotes: "", fastingStart: "", fastingEnd: ""
     };
 }
 
-// Configuración y Usuarios
-function loadSettings() {
-    const stored = localStorage.getItem("userProfile");
-    if (stored) {
-        userProfile = JSON.parse(stored);
-        if ($("goalCaloriesInput")) $("goalCaloriesInput").value = userProfile.calorieGoal || 2000;
-        if ($("apiKeyInput")) $("apiKeyInput").value = userProfile.apiKey || "";
+/* ---------------------------------------------------------
+   Navegación por Pestañas (Tabs)
+   --------------------------------------------------------- */
+function setupTabs() {
+    const registerBtn = $("tabRegisterBtn");
+    const statsBtn = $("tabStatsBtn");
+    const tabRegister = $("tabRegister");
+    const tabStats = $("tabStats");
+
+    if (!registerBtn || !statsBtn) return;
+
+    registerBtn.addEventListener("click", () => {
+        registerBtn.classList.add("active");
+        statsBtn.classList.remove("active");
+        tabRegister.classList.add("active");
+        tabStats.classList.remove("active");
+    });
+
+    statsBtn.addEventListener("click", () => {
+        statsBtn.classList.add("active");
+        registerBtn.classList.remove("active");
+        tabStats.classList.add("active");
+        tabRegister.classList.remove("active");
+        
+        // Cargar estadísticas actualizadas al cambiar a esta pestaña
+        renderHistoryAndStats();
+        renderChart();
+    });
+}
+
+function switchTab(tabName) {
+    if (tabName === "register") {
+        $("tabRegisterBtn")?.click();
+    } else if (tabName === "stats") {
+        $("tabStatsBtn")?.click();
     }
 }
 
-function saveSettings() {
-    userProfile.calorieGoal = parseInt($("goalCaloriesInput")?.value || "2000", 10);
-    userProfile.apiKey = $("apiKeyInput")?.value.trim() || "";
-    localStorage.setItem("userProfile", JSON.stringify(userProfile));
-    $("settingsModal").style.display = "none";
-    showToast("⚙️ Configuración guardada");
-    updateSummary();
-}
+/* ---------------------------------------------------------
+   INTEGRACIÓN CON GEMINI IA
+   --------------------------------------------------------- */
 
 function getActiveApiKey() {
-    return userProfile.apiKey || "";
+    return $("userApiKey")?.value.trim() || currentProfile?.apiKey || localStorage.getItem("gemini_api_key") || GEMINI_API_KEY;
 }
 
-// Lógica de Estimación IA con Gemini
 async function estimateCaloriesAI(mealId) {
     const textInput = $(`${mealId}Text`);
     const calInput = $(`${mealId}Cal`);
@@ -114,6 +105,7 @@ async function estimateCaloriesAI(mealId) {
     }
 
     const activeApiKey = getActiveApiKey();
+
     if (!activeApiKey) {
         alert("Debes ingresar tu Gemini API Key en el menú de Configuración.");
         return;
@@ -122,11 +114,10 @@ async function estimateCaloriesAI(mealId) {
     showToast("✨ Consultando a la IA...");
 
     const availableModels = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-3.6-flash"
     ];
 
-    const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto ni unidades. Comida: "${description}"`;
+    const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
 
     let success = false;
 
@@ -135,7 +126,9 @@ async function estimateCaloriesAI(mealId) {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
             });
 
             const result = await response.json();
@@ -147,14 +140,15 @@ async function estimateCaloriesAI(mealId) {
                 if (!isNaN(estimatedCalories)) {
                     calInput.value = estimatedCalories;
                     updateSummary();
-                    autoSave();
                     showToast(`✨ Estimación: ${estimatedCalories} kcal`);
                     success = true;
                     break;
                 }
+            } else if (result.error) {
+                console.warn(`Error con ${model}:`, result.error.message);
             }
         } catch (err) {
-            console.warn(`Error con ${model}:`, err);
+            console.warn(`Error de conexión con ${model}:`, err);
         }
     }
 
@@ -163,192 +157,564 @@ async function estimateCaloriesAI(mealId) {
     }
 }
 
-// Cálculo y Resumen
-function calculateCalories(data) {
-    if (!data) return 0;
-    return (parseInt(data.breakfastCal || 0, 10) +
-            parseInt(data.lunchCal || 0, 10) +
-            parseInt(data.snackCal || 0, 10) +
-            parseInt(data.dinnerCal || 0, 10) +
-            parseInt(data.othersCal || 0, 10));
-}
+/* ---------------------------------------------------------
+   AUTENTICACIÓN Y SESIONES
+   --------------------------------------------------------- */
 
-function updateSummary() {
-    const currentData = collectFormData();
-    const total = calculateCalories(currentData);
-    const goal = userProfile.calorieGoal || 2000;
-    const percentage = Math.round((total / goal) * 100);
+function setupAuth() {
+    $("authForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const userInput = $("authEmail").value.trim().toLowerCase();
+        const password = $("authPassword").value;
+        const errorMsg = $("authError");
+        errorMsg.textContent = "";
 
-    if ($("totalCalories")) $("totalCalories").textContent = `${total} kcal`;
-    if ($("calorieGoalDisplay")) $("calorieGoalDisplay").textContent = `${goal} kcal`;
-    if ($("calorieProgress")) $("calorieProgress").textContent = `${percentage}%`;
-}
+        const email = userInput.includes('@') ? userInput : `${userInput}@gmail.com`;
 
-function collectFormData() {
-    return {
-        breakfastText: $("breakfastText")?.value || "",
-        breakfastCal: $("breakfastCal")?.value || "",
-        lunchText: $("lunchText")?.value || "",
-        lunchCal: $("lunchCal")?.value || "",
-        snackText: $("snackText")?.value || "",
-        snackCal: $("snackCal")?.value || "",
-        dinnerText: $("dinnerText")?.value || "",
-        dinnerCal: $("dinnerCal")?.value || "",
-        othersText: $("othersText")?.value || "",
-        othersCal: $("othersCal")?.value || "",
-        gym: $("gymToggleBtn")?.dataset.active === "true",
-        gymDuration: $("gymDuration")?.value || "",
-        running: $("runToggleBtn")?.dataset.active === "true",
-        runningKm: $("runKm")?.value || "",
-        runningDuration: $("runDuration")?.value || "",
-        activityNotes: $("activityNotes")?.value || ""
-    };
-}
-
-// Ayuno Intermitente
-function startFasting() {
-    fastingStartTime = new Date();
-    localStorage.setItem("fastingStartTime", fastingStartTime.toISOString());
-    updateFastingUI(true);
-}
-
-function stopFasting() {
-    fastingStartTime = null;
-    localStorage.removeItem("fastingStartTime");
-    clearInterval(fastingInterval);
-    updateFastingUI(false);
-}
-
-function updateFastingUI(isFasting) {
-    if (isFasting) {
-        if ($("fastingStartBtn")) $("fastingStartBtn").style.display = "none";
-        if ($("fastingStopBtn")) $("fastingStopBtn").style.display = "inline-block";
-        fastingInterval = setInterval(renderFastingTimer, 1000);
-    } else {
-        if ($("fastingStartBtn")) $("fastingStartBtn").style.display = "inline-block";
-        if ($("fastingStopBtn")) $("fastingStopBtn").style.display = "none";
-        if ($("fastingDisplay")) $("fastingDisplay").textContent = "Tiempo de ayuno: 00:00:00";
-    }
-}
-
-function renderFastingTimer() {
-    if (!fastingStartTime) return;
-    const diff = Math.floor((new Date() - new Date(fastingStartTime)) / 1000);
-    const hrs = String(Math.floor(diff / 3600)).padStart(2, "0");
-    const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
-    const secs = String(diff % 60).padStart(2, "0");
-    if ($("fastingDisplay")) $("fastingDisplay").textContent = `Tiempo de ayuno: ${hrs}:${mins}:${secs}`;
-}
-
-function updateFasting() {
-    const savedTime = localStorage.getItem("fastingStartTime");
-    if (savedTime) {
-        fastingStartTime = new Date(savedTime);
-        updateFastingUI(true);
-    } else {
-        updateFastingUI(false);
-    }
-}
-
-// Estadísticas Avanzadas (Chart.js)
-async function loadAdvancedStats() {
-    if (!currentUser && !supabaseClient) return;
-
-    const days = parseInt($("statsFilter")?.value || "7", 10);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - (days - 1));
-    const startDateStr = startDate.toISOString().split('T')[0];
-
-    let rows = [];
-    if (supabaseClient && currentUser) {
-        const { data } = await supabaseClient
-            .from('registros')
-            .select('date, data')
-            .eq('user_id', currentUser.id)
-            .gte('date', startDateStr)
-            .order('date', { ascending: true });
-        rows = data || [];
-    }
-
-    const labels = [];
-    const calorieData = [];
-    let totalCal = 0;
-    let gymDays = 0;
-    let totalKm = 0;
-
-    rows.forEach(r => {
-        const dateObj = new Date(r.date + "T12:00:00");
-        labels.push(dateObj.toLocaleDateString("es-ES", { day: "numeric", month: "short" }));
-        
-        const cal = calculateCalories(r.data);
-        calorieData.push(cal);
-        totalCal += cal;
-
-        if (r.data?.gym) gymDays++;
-        if (r.data?.runningKm) totalKm += parseFloat(r.data.runningKm);
+        if (isSignUpMode) {
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            } else {
+                alert("¡Usuario creado con éxito! Ya podés iniciar sesión.");
+                toggleAuthMode();
+            }
+        } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            }
+        }
     });
 
-    const count = rows.length;
-    if ($("avgCalories")) $("avgCalories").textContent = count > 0 ? `${Math.round(totalCal / count)} kcal` : "0 kcal";
-    if ($("totalGymDays")) $("totalGymDays").textContent = `${gymDays} días`;
-    if ($("totalKmRun")) $("totalKmRun").textContent = `${totalKm.toFixed(1)} km`;
+    $("btnToggleAuthMode")?.addEventListener("click", toggleAuthMode);
 
-    const ctx = document.getElementById('statsChart')?.getContext('2d');
-    if (!ctx) return;
+    $("logoutBtn")?.addEventListener("click", async () => {
+        await supabaseClient.auth.signOut();
+    });
 
-    if (myChart) myChart.destroy();
-
-    myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels.length ? labels : ["Sin datos"],
-            datasets: [{
-                label: 'Calorías (kcal)',
-                data: calorieData.length ? calorieData : [0],
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                fill: true,
-                tension: 0.3,
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true } }
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            currentUser = session.user;
+            $("authModal").style.display = "none";
+            $("appContainer").style.display = "flex";
+            
+            const cleanUser = currentUser.email.split('@')[0];
+            $("userEmailBadge").textContent = `👤 ${cleanUser}`;
+            
+            loadAppContent();
+        } else {
+            currentUser = null;
+            $("authModal").style.display = "flex";
+            $("appContainer").style.display = "none";
         }
     });
 }
 
-// Persistencia y Actualización General
-async function autoSave() {
-    showToast("💾 Guardando...");
-    updateSummary();
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    $("authTitle").textContent = isSignUpMode ? "📝 Crear Cuenta" : "🔑 Iniciar Sesión";
+    $("authSubmitBtn").textContent = isSignUpMode ? "Registrarse" : "Entrar";
+    $("authToggleText").textContent = isSignUpMode ? "¿Ya tenés cuenta?" : "¿No tenés cuenta?";
+    $("btnToggleAuthMode").textContent = isSignUpMode ? "Iniciá sesión" : "Registrate acá";
+    $("authError").textContent = "";
+}
+
+/* ---------------------------------------------------------
+   OPERACIONES EN SUPABASE
+   --------------------------------------------------------- */
+
+async function saveDayCloud() {
+    if (!currentUser) return;
+    const date = getSelectedDate();
+    const data = getFormData();
+
+    const { error } = await supabaseClient
+        .from('registros')
+        .upsert({ date: date, data: data, user_id: currentUser.id }, { onConflict: 'date,user_id' });
+
+    if (error) {
+        console.error("Error al guardar:", error);
+        showToast("❌ Error al guardar");
+    } else {
+        showToast("⚡ Guardado en Supabase");
+        updateEverything();
+    }
+}
+
+async function loadRecord() {
+    if (!currentUser) return;
+    const date = getSelectedDate();
+
+    const { data } = await supabaseClient
+        .from('registros')
+        .select('data')
+        .eq('date', date)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+    const record = (data && data.data) ? data.data : emptyRecord();
+
+    meals.forEach(m => {
+        if ($(`${m.id}Text`)) $(`${m.id}Text`).value = record[m.id] || "";
+        if ($(`${m.id}Cal`)) $(`${m.id}Cal`).value = record[m.id + "Cal"] || "";
+    });
+
+    if ($("gymMinutes")) $("gymMinutes").value = record.gymMinutes || "";
+    if ($("runningKm")) $("runningKm").value = record.runningKm || "";
+    if ($("runningMinutes")) $("runningMinutes").value = record.runningMinutes || "";
+    if ($("activityNotes")) $("activityNotes").value = record.activityNotes || "";
+    if ($("fastingStart")) $("fastingStart").value = record.fastingStart || "";
+    if ($("fastingEnd")) $("fastingEnd").value = record.fastingEnd || "";
+
+    updateActivityButton($("gymButton"), record.gym);
+    updateActivityButton($("runButton"), record.running);
+
+    updateEverything();
+}
+
+async function clearDay() {
+    if (!currentUser || !confirm("¿Querés eliminar los datos de este día?")) return;
+
+    const date = getSelectedDate();
+    const { error } = await supabaseClient
+        .from('registros')
+        .delete()
+        .eq('date', date)
+        .eq('user_id', currentUser.id);
+
+    if (error) {
+        showToast("❌ Error al borrar");
+    } else {
+        showToast("Día eliminado");
+        loadRecord();
+    }
+}
+
+async function fetchUserProfile() {
+    if (!currentUser) return;
+
+    const { data } = await supabaseClient
+        .from('perfil')
+        .select('data')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+    if (data && data.data) {
+        currentProfile = data.data;
+        if (currentProfile.weight) $("userWeight").value = currentProfile.weight;
+        if (currentProfile.height) $("userHeight").value = currentProfile.height;
+        if (currentProfile.age) $("userAge").value = currentProfile.age;
+        if (currentProfile.gender) $("userGender").value = currentProfile.gender;
+        if (currentProfile.activity) $("userActivity").value = currentProfile.activity;
+        if (currentProfile.isManual && currentProfile.goal) $("userManualGoal").value = currentProfile.goal;
+        if (currentProfile.apiKey && $("userApiKey")) $("userApiKey").value = currentProfile.apiKey;
+
+        const badge = $("profileStatusBadge");
+        if (badge) badge.textContent = currentProfile.isManual ? "Meta Manual" : "Meta Sugerida";
+    } else {
+        const savedKey = localStorage.getItem("gemini_api_key");
+        if (savedKey && $("userApiKey")) $("userApiKey").value = savedKey;
+    }
+}
+
+async function saveUserProfileCloud(profileData) {
+    if (!currentUser) return;
+
+    const apiKey = $("userApiKey")?.value.trim() || "";
+    profileData.apiKey = apiKey;
+    if (apiKey) localStorage.setItem("gemini_api_key", apiKey);
+
+    currentProfile = profileData;
+
+    const { error } = await supabaseClient
+        .from('perfil')
+        .upsert({ id: currentUser.id, data: profileData }, { onConflict: 'id' });
+
+    if (!error) {
+        showToast("⚡ Perfil guardado");
+        fetchUserProfile();
+        updateEverything();
+    }
+}
+
+/* ---------------------------------------------------------
+   HELPERS CÁLCULOS E INTERFAZ
+   --------------------------------------------------------- */
+
+function getFormData() {
+    return {
+        breakfast: $("breakfastText")?.value || "",
+        breakfastCal: Number($("breakfastCal")?.value || 0),
+        lunch: $("lunchText")?.value || "",
+        lunchCal: Number($("lunchCal")?.value || 0),
+        snack: $("snackText")?.value || "",
+        snackCal: Number($("snackCal")?.value || 0),
+        dinner: $("dinnerText")?.value || "",
+        dinnerCal: Number($("dinnerCal")?.value || 0),
+        other: $("otherText")?.value || "",
+        otherCal: Number($("otherCal")?.value || 0),
+        gym: $("gymButton")?.classList.contains("active") || false,
+        gymMinutes: Number($("gymMinutes")?.value || 0),
+        running: $("runButton")?.classList.contains("active") || false,
+        runningKm: Number($("runningKm")?.value || 0),
+        runningMinutes: Number($("runningMinutes")?.value || 0),
+        activityNotes: $("activityNotes")?.value || "",
+        fastingStart: $("fastingStart")?.value || "",
+        fastingEnd: $("fastingEnd")?.value || ""
+    };
+}
+
+function calculateCalories(record) {
+    return Number(record.breakfastCal||0) + Number(record.lunchCal||0) + Number(record.snackCal||0) + Number(record.dinnerCal||0) + Number(record.otherCal||0);
+}
+
+function calculateFastingMinutes(record) {
+    if (!record.fastingStart || !record.fastingEnd) return null;
+    const startParts = record.fastingStart.split(":").map(Number);
+    const endParts = record.fastingEnd.split(":").map(Number);
+    let start = startParts[0] * 60 + startParts[1];
+    let end = endParts[0] * 60 + endParts[1];
+    if (end <= start) end += 24 * 60;
+    return end - start;
+}
+
+function formatDuration(minutes) {
+    if (minutes === null || minutes === undefined) return "—";
+    return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}
+
+function getCalorieGoal() {
+    return (currentProfile && currentProfile.goal) ? currentProfile.goal : DEFAULT_CALORIE_GOAL;
+}
+
+function updateActivityButton(button, active) {
+    if (!button) return;
+    button.classList.toggle("active", Boolean(active));
+    if (button.id === "gymButton" && $("gymStatus")) $("gymStatus").textContent = active ? "Registrado ✓" : "No fui";
+    if (button.id === "runButton" && $("runStatus")) $("runStatus").textContent = active ? "Registrado ✓" : "No corrí";
+}
+
+function updateSummary() {
+    const record = getFormData();
+    const calories = calculateCalories(record);
+    const calorieGoal = getCalorieGoal();
+    const percentage = Math.min(100, Math.round((calories / calorieGoal) * 100));
+
+    if ($("calorieTotal")) $("calorieTotal").textContent = `${calories} kcal`;
+    if ($("caloriePercent")) $("caloriePercent").textContent = `${percentage}%`;
+    if ($("calorieRing")) $("calorieRing").style.setProperty("--progress", `${percentage}%`);
+    if ($("calorieGoal")) $("calorieGoal").textContent = calorieGoal;
+
+    if ($("gymSummary")) $("gymSummary").textContent = record.gym ? "Sí" : "No";
+    if ($("gymMinutesSummary")) $("gymMinutesSummary").textContent = record.gym ? `${record.gymMinutes || 0} min` : "Sin actividad";
+
+    if ($("runningSummary")) $("runningSummary").textContent = `${record.runningKm || 0} km`;
+    if ($("runningTimeSummary")) $("runningTimeSummary").textContent = record.running ? `${record.runningMinutes || 0} min` : "Sin carrera";
+
+    const fasting = calculateFastingMinutes(record);
+    if ($("fastingSummary")) $("fastingSummary").textContent = formatDuration(fasting);
+    if ($("fastingSummaryText")) $("fastingSummaryText").textContent = fasting !== null ? `${record.fastingStart} → ${record.fastingEnd}` : "Sin registrar";
+}
+
+function updateFasting() {
+    const record = getFormData();
+    const minutes = calculateFastingMinutes(record);
+
+    if ($("fastingBig")) $("fastingBig").textContent = formatDuration(minutes);
+    if (minutes === null) {
+        if ($("fastingProgress")) $("fastingProgress").style.width = "0%";
+        if ($("fastingMessage")) $("fastingMessage").textContent = "Completá las horas.";
+        return;
+    }
+
+    const goalMinutes = FASTING_GOAL * 60;
+    const percentage = Math.min(100, (minutes / goalMinutes) * 100);
+
+    if ($("fastingProgress")) $("fastingProgress").style.width = `${percentage}%`;
+
+    if (minutes >= goalMinutes) {
+        if ($("fastingMessage")) $("fastingMessage").textContent = "🎉 ¡Objetivo de 16 horas alcanzado!";
+    } else {
+        if ($("fastingMessage")) $("fastingMessage").textContent = `Faltan ${formatDuration(goalMinutes - minutes)} para llegar a 16 h.`;
+    }
+}
+
+async function renderHistoryAndStats() {
+    if (!currentUser) return;
+
+    const { data: rows } = await supabaseClient
+        .from('registros')
+        .select('date, data')
+        .eq('user_id', currentUser.id)
+        .order('date', { ascending: false })
+        .limit(30);
+
+    const history = $("history");
+    if (!history) return;
+
+    const count = rows ? rows.length : 0;
+    if ($("daysCount")) $("daysCount").textContent = `${count} ${count === 1 ? "día" : "días"}`;
+
+    if (!rows || !rows.length) {
+        history.innerHTML = `<p class="muted">Todavía no tenés días registrados.</p>`;
+        if ($("avgCalories")) $("avgCalories").textContent = "0 kcal";
+        if ($("totalKm")) $("totalKm").textContent = "0 km";
+        if ($("totalGymDays")) $("totalGymDays").textContent = "0";
+        return;
+    }
+
+    let totalCal = 0;
+    let totalKm = 0;
+    let totalGymDays = 0;
+
+    history.innerHTML = "";
+    rows.forEach(row => {
+        const date = row.date;
+        const record = row.data;
+        const calories = calculateCalories(record);
+        const fasting = calculateFastingMinutes(record);
+
+        totalCal += calories;
+        totalKm += Number(record.runningKm || 0);
+        if (record.gym) totalGymDays++;
+
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+            <div>
+                <div class="history-date">${formatDate(date)}</div>
+                <div class="history-details">
+                    🔥 ${calories} kcal &nbsp;·&nbsp; ${record.gym ? "🏋️ Gimnasio" : "—"} &nbsp;·&nbsp; 🏃 ${record.runningKm || 0} km &nbsp;·&nbsp; ⏱️ ${fasting === null ? "—" : formatDuration(fasting)}
+                </div>
+            </div>
+            <button class="history-open" data-date="${date}">Abrir</button>
+        `;
+        history.appendChild(item);
+    });
+
+    // Actualizar cajas de estadísticas
+    if ($("avgCalories")) $("avgCalories").textContent = `${Math.round(totalCal / rows.length)} kcal`;
+    if ($("totalKm")) $("totalKm").textContent = `${totalKm.toFixed(1)} km`;
+    if ($("totalGymDays")) $("totalGymDays").textContent = `${totalGymDays} días`;
+
+    document.querySelectorAll(".history-open").forEach(button => {
+        button.addEventListener("click", () => {
+            $("date").value = button.dataset.date;
+            loadRecord();
+            switchTab("register");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    });
+}
+
+async function renderChart() {
+    if (!currentUser) return;
+
+    const selectedDate = new Date(getSelectedDate() + "T12:00:00");
+    const calorieGoal = getCalorieGoal();
+    const daysKeys = [];
+
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(selectedDate);
+        date.setDate(selectedDate.getDate() - i);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        daysKeys.push({ key, label: date.toLocaleDateString("es-UY", { weekday: "short" }).replace(".", "") });
+    }
+
+    const { data: rows } = await supabaseClient
+        .from('registros')
+        .select('date, data')
+        .eq('user_id', currentUser.id)
+        .in('date', daysKeys.map(d => d.key));
+
+    const recordsMap = {};
+    if (rows) rows.forEach(r => recordsMap[r.date] = r.data);
+
+    const days = daysKeys.map(d => {
+        const record = recordsMap[d.key] || emptyRecord();
+        return { calories: calculateCalories(record), label: d.label };
+    });
+
+    const maxCalories = Math.max(calorieGoal, ...days.map(d => d.calories));
+    const chart = $("weeklyChart");
+    if (!chart) return;
+    chart.innerHTML = "";
+
+    days.forEach((day, index) => {
+        const column = document.createElement("div");
+        column.className = "chart-column";
+        const height = Math.max(5, (day.calories / maxCalories) * 145);
+        column.innerHTML = `
+            <div class="chart-bar" style="height: ${height}px; animation-delay: ${index * 0.05}s;" title="${day.calories} kcal"></div>
+            <span>${day.label}</span>
+        `;
+        chart.appendChild(column);
+    });
 }
 
 function updateEverything() {
     if ($("prettyDate")) $("prettyDate").textContent = formatDate(getSelectedDate());
     updateSummary();
     updateFasting();
-    loadAdvancedStats();
+    renderHistoryAndStats();
+    renderChart();
 }
 
-function toggleTheme() {
-    const current = document.body.getAttribute("data-theme");
-    const next = current === "dark" ? "light" : "dark";
-    document.body.setAttribute("data-theme", next);
-    if ($("toggleThemeBtn")) $("toggleThemeBtn").textContent = next === "dark" ? "☀️" : "🌙";
-}
-
-function showToast(msg) {
+function showToast(message) {
     const toast = $("toast");
     if (!toast) return;
-    toast.textContent = msg;
+    toast.textContent = message;
     toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2000);
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
-function checkAuth() {
-    currentUser = { id: "demo-user" }; // Simulación activa
-    updateEverything();
+function createMeals() {
+    const container = $("meals");
+    if (!container) return;
+    container.innerHTML = "";
+
+    meals.forEach(m => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "meal-form";
+        wrapper.innerHTML = `
+            <div class="meal-icon">${m.icon}</div>
+            <div class="meal-content">
+                <div class="meal-header-row">
+                    <div class="meal-title"><strong>${m.name}</strong></div>
+                    <button type="button" class="btn-ai" onclick="estimateCaloriesAI('${m.id}')" title="Calcular calorías con IA">
+                        ✨ Estimar con IA
+                    </button>
+                </div>
+                <div class="meal-inputs-container">
+                    <textarea id="${m.id}Text" class="meal-input" placeholder="¿Qué comiste? (ej: 2 huevos revueltos con 1 tostada)"></textarea>
+                    <input id="${m.id}Cal" class="meal-cal-input" type="number" min="0" placeholder="Calorías">
+                </div>
+            </div>
+        `;
+        container.appendChild(wrapper);
+    });
 }
+
+/* ---------------------------------------------------------
+   CONFIGURACIÓN Y MODAL DE PERFIL
+   --------------------------------------------------------- */
+
+function setupSettingsModal() {
+    const modal = $("settingsModal");
+    const openBtn = $("btnOpenSettings");
+    const closeBtn = $("btnCloseSettings");
+
+    if (openBtn && modal) {
+        openBtn.addEventListener("click", () => {
+            modal.style.display = "flex";
+        });
+    }
+
+    if (closeBtn && modal) {
+        closeBtn.addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+    }
+
+    window.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+}
+
+function setupProfileEvents() {
+    $("btnCalcSuggested")?.addEventListener("click", () => {
+        const weight = parseFloat($("userWeight").value);
+        const height = parseFloat($("userHeight").value);
+        const age = parseInt($("userAge").value);
+        const gender = $("userGender").value;
+        const activity = parseFloat($("userActivity").value);
+
+        if (!weight || !height || !age) { alert("Completa peso, altura y edad."); return; }
+
+        let bmr = (gender === "hombre")
+            ? 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
+            : 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+
+        const suggestedGoal = Math.round(bmr * activity);
+        saveUserProfileCloud({ weight, height, age, gender, activity, goal: suggestedGoal, isManual: false });
+    });
+
+    $("btnSaveManual")?.addEventListener("click", () => {
+        const manualGoal = parseInt($("userManualGoal").value);
+        if (!manualGoal || manualGoal <= 0) { alert("Ingresá un valor válido."); return; }
+
+        saveUserProfileCloud({
+            weight: parseFloat($("userWeight").value) || null,
+            height: parseFloat($("userHeight").value) || null,
+            age: parseInt($("userAge").value) || null,
+            gender: $("userGender")?.value,
+            activity: parseFloat($("userActivity")?.value),
+            goal: manualGoal,
+            isManual: true
+        });
+    });
+
+    $("btnSaveApiKey")?.addEventListener("click", () => {
+        const key = $("userApiKey")?.value.trim();
+        if (!key) { alert("Ingresá una clave válida."); return; }
+        
+        localStorage.setItem("gemini_api_key", key);
+        if (currentUser) {
+            saveUserProfileCloud({
+                ...(currentProfile || {}),
+                apiKey: key
+            });
+        } else {
+            showToast("🔑 Key guardada localmente");
+        }
+    });
+}
+
+function setupEvents() {
+    $("gymButton")?.addEventListener("click", () => {
+        updateActivityButton($("gymButton"), !$("gymButton").classList.contains("active"));
+        updateSummary();
+    });
+
+    $("runButton")?.addEventListener("click", () => {
+        updateActivityButton($("runButton"), !$("runButton").classList.contains("active"));
+        updateSummary();
+    });
+
+    document.querySelectorAll("input, textarea").forEach(input => {
+        input.addEventListener("input", () => {
+            updateSummary();
+            updateFasting();
+        });
+    });
+
+    $("date")?.addEventListener("change", () => loadRecord());
+    $("saveButton")?.addEventListener("click", () => saveDayCloud());
+    $("clearButton")?.addEventListener("click", () => clearDay());
+    
+    $("themeToggle")?.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        $("themeToggle").textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    });
+}
+
+async function loadAppContent() {
+    await fetchUserProfile();
+    await loadRecord();
+}
+
+function init() {
+    if ($("date")) $("date").value = today();
+    createMeals();
+    setupTabs();
+    setupEvents();
+    setupSettingsModal();
+    setupProfileEvents();
+    setupAuth();
+}
+
+document.addEventListener("DOMContentLoaded", init);
