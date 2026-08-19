@@ -53,17 +53,20 @@ function emptyRecord() {
 function setupAuth() {
     $("authForm")?.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const email = $("authEmail").value;
+        const userInput = $("authEmail").value.trim().toLowerCase();
         const password = $("authPassword").value;
         const errorMsg = $("authError");
         errorMsg.textContent = "";
+
+        // Si el usuario no puso '@', le formateamos un mail automático de fondo (ej: hiam -> hiam@app.com)
+        const email = userInput.includes('@') ? userInput : `${userInput}@app.com`;
 
         if (isSignUpMode) {
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) {
                 errorMsg.textContent = "❌ " + error.message;
             } else {
-                alert("¡Cuenta creada con éxito! Si tenés confirmación activada, revisá tu mail. Ya podés entrar.");
+                alert("¡Usuario creado con éxito! Ya podés iniciar sesión.");
                 toggleAuthMode();
             }
         } else {
@@ -79,6 +82,26 @@ function setupAuth() {
     $("logoutBtn")?.addEventListener("click", async () => {
         await supabaseClient.auth.signOut();
     });
+
+    // Escuchar cambios de sesión en tiempo real
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            currentUser = session.user;
+            $("authModal").style.display = "none";
+            $("appContainer").style.display = "flex";
+            
+            // Mostrar solo el usuario limpio en el badge superior (sin el @app.com)
+            const cleanUser = currentUser.email.replace('@app.com', '');
+            $("userEmailBadge").textContent = `👤 ${cleanUser}`;
+            
+            loadAppContent();
+        } else {
+            currentUser = null;
+            $("authModal").style.display = "flex";
+            $("appContainer").style.display = "none";
+        }
+    });
+}
 
     // Escuchar cambios de sesión en tiempo real
     supabaseClient.auth.onAuthStateChange((event, session) => {
