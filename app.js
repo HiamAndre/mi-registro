@@ -11,7 +11,6 @@ const DEFAULT_CALORIE_GOAL = 2000;
 const FASTING_GOAL = 16;
 let currentProfile = null;
 let currentUser = null;
-let isSignUpMode = false;
 
 const meals = [
     { id: "breakfast", name: "Desayuno", icon: "🌅" },
@@ -58,26 +57,15 @@ function setupAuth() {
         const errorMsg = $("authError");
         errorMsg.textContent = "";
 
-        // Usamos @gmail.com internamente para cumplir con el formato de Supabase
+        // Mantenemos el mapeo a @gmail.com internamente
         const email = userInput.includes('@') ? userInput : `${userInput}@gmail.com`;
 
-        if (isSignUpMode) {
-            const { data, error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) {
-                errorMsg.textContent = "❌ " + error.message;
-            } else {
-                alert("¡Usuario creado con éxito! Ya podés iniciar sesión.");
-                toggleAuthMode();
-            }
-        } else {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                errorMsg.textContent = "❌ " + error.message;
-            }
+        // Solo permitir Iniciar Sesión con usuarios existentes
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            errorMsg.textContent = "❌ Usuario o contraseña incorrectos";
         }
     });
-
-    $("btnToggleAuthMode")?.addEventListener("click", toggleAuthMode);
 
     $("logoutBtn")?.addEventListener("click", async () => {
         await supabaseClient.auth.signOut();
@@ -101,15 +89,6 @@ function setupAuth() {
             $("appContainer").style.display = "none";
         }
     });
-}
-
-function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    $("authTitle").textContent = isSignUpMode ? "📝 Crear Cuenta" : "🔑 Iniciar Sesión";
-    $("authSubmitBtn").textContent = isSignUpMode ? "Registrarse" : "Entrar";
-    $("authToggleText").textContent = isSignUpMode ? "¿Ya tenés cuenta?" : "¿No tenés cuenta?";
-    $("btnToggleAuthMode").textContent = isSignUpMode ? "Iniciá sesión" : "Registrate acá";
-    $("authError").textContent = "";
 }
 
 /* ---------------------------------------------------------
