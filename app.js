@@ -4,7 +4,9 @@
 
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
-const GEMINI_API_KEY = "TU_GEMINI_API_KEY_AQUI"; 
+
+// Obtiene la API Key guardada en localStorage o la inicia vacía
+let GEMINI_API_KEY = localStorage.getItem("user_gemini_key") || ""; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -61,8 +63,10 @@ async function estimateCaloriesAI(mealId) {
         return;
     }
 
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "TU_GEMINI_API_KEY_AQUI") {
-        alert("Debes configurar tu GEMINI_API_KEY en app.js");
+    const activeApiKey = GEMINI_API_KEY || localStorage.getItem("user_gemini_key");
+
+    if (!activeApiKey) {
+        alert("Por favor ingresá tu API Key de Gemini en la sección de Perfil y Configuración.");
         return;
     }
 
@@ -71,7 +75,7 @@ async function estimateCaloriesAI(mealId) {
     try {
         const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -93,7 +97,7 @@ async function estimateCaloriesAI(mealId) {
                 showToast("❌ No se pudo interpretar la respuesta");
             }
         } else {
-            showToast("❌ Error al consultar la IA");
+            showToast("❌ Error al consultar la IA (revisá tu API Key)");
         }
     } catch (error) {
         console.error("Error Gemini API:", error);
@@ -515,6 +519,30 @@ function createMeals() {
     });
 }
 
+/* ---------------------------------------------------------
+   CONFIGURACIÓN Y GUARDADO DE LA API KEY EN LOCALSTORAGE
+   --------------------------------------------------------- */
+
+function loadStoredApiKey() {
+    const savedKey = localStorage.getItem("user_gemini_key");
+    if (savedKey && $("userApiKey")) {
+        $("userApiKey").value = savedKey;
+    }
+}
+
+function setupApiKeyEvents() {
+    $("btnSaveApiKey")?.addEventListener("click", () => {
+        const keyInput = $("userApiKey")?.value.trim();
+        if (!keyInput) {
+            alert("Por favor ingresá una API Key válida.");
+            return;
+        }
+        localStorage.setItem("user_gemini_key", keyInput);
+        GEMINI_API_KEY = keyInput;
+        showToast("🔑 API Key guardada");
+    });
+}
+
 function setupProfileEvents() {
     $("btnCalcSuggested")?.addEventListener("click", () => {
         const weight = parseFloat($("userWeight").value);
@@ -587,6 +615,8 @@ function init() {
     createMeals();
     setupEvents();
     setupProfileEvents();
+    setupApiKeyEvents();
+    loadStoredApiKey();
     setupAuth();
 }
 
