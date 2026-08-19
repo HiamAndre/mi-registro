@@ -3,237 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Registro Diario</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Mi Registro</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <!-- MODAL DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
-    <div id="authModal" class="auth-overlay">
-        <div class="auth-card">
+    <!-- MODAL DE AUTENTICACIÓN -->
+    <div id="authModal" class="modal" style="display: flex;">
+        <div class="modal-content auth-box">
             <h2 id="authTitle">🔑 Iniciar Sesión</h2>
             <form id="authForm">
-                <div class="input-group">
-                    <label for="authEmail">Usuario:</label>
-                    <input type="text" id="authEmail" required placeholder="Tu usuario (ej: andre)">
-                </div>
-                <div class="input-group">
-                    <label for="authPassword">Contraseña:</label>
-                    <input type="password" id="authPassword" required placeholder="••••••••">
-                </div>
-                <button type="submit" id="authSubmitBtn" class="btn-primary" style="margin-top: 1rem;">Entrar</button>
+                <input type="text" id="authEmail" placeholder="Usuario o Email" required>
+                <input type="password" id="authPassword" placeholder="Contraseña" required>
+                <button type="submit" id="authSubmitBtn" class="btn-primary">Entrar</button>
             </form>
-            <p id="authError" class="auth-error"></p>
-            <div class="auth-toggle">
-                <span id="authToggleText">¿No tenés cuenta?</span>
-                <button id="btnToggleAuthMode" class="btn-link">Registrate acá</button>
-            </div>
+            <p class="auth-toggle">
+                <span id="authToggleText">¿No tenés cuenta?</span> 
+                <button type="button" id="btnToggleAuthMode" class="btn-link">Registrate acá</button>
+            </p>
+            <p id="authError" class="error-text"></p>
         </div>
     </div>
 
-    <!-- CONTENIDO PRINCIPAL DE LA APP -->
-    <div id="appContainer" class="container" style="display: none;">
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div id="appContainer" class="app-container" style="display: none;">
         
-        <!-- ENCABEZADO -->
-        <header class="header">
-            <div>
-                <h1>Mi Registro</h1>
-                <p id="prettyDate" class="muted">Cargando fecha...</p>
+        <!-- HEADER -->
+        <header class="top-bar">
+            <div class="user-badge-container">
+                <span id="userEmailBadge" class="user-badge">👤 Usuario</span>
             </div>
-            <div class="header-actions">
-                <span id="userEmailBadge" class="badge">Usuario</span>
-                <button id="logoutBtn" class="btn-secondary" title="Cerrar sesión">🚪 Salir</button>
-                <button id="themeToggle" class="btn-icon" title="Cambiar tema">🌙</button>
+            <div class="top-actions">
+                <button id="btnOpenSettings" class="btn-secondary">⚙️ Perfil / Configuración</button>
+                <button id="themeToggle" class="btn-icon">🌙</button>
+                <button id="logoutBtn" class="btn-secondary">Cerrar Sesión</button>
             </div>
         </header>
 
-        <!-- SELECCIÓN DE FECHA -->
-        <section class="card">
-            <div class="date-selector">
-                <label for="date">Fecha del registro:</label>
+        <main class="main-content">
+            <!-- SELECCIÓN DE FECHA -->
+            <section class="card date-card">
+                <label for="date">📅 Fecha:</label>
                 <input type="date" id="date">
-            </div>
-        </section>
+                <span id="prettyDate" class="pretty-date"></span>
+            </section>
 
-        <!-- RESUMEN DE HOY -->
-        <section class="card">
-            <h2>📊 Resumen del Día</h2>
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <div class="ring-container">
-                        <div id="calorieRing" class="progress-ring" style="--progress: 0%;">
-                            <div class="ring-inner">
-                                <span id="calorieTotal" class="ring-value">0 kcal</span>
-                                <span id="caloriePercent" class="ring-sub">0%</span>
-                            </div>
+            <!-- RESUMEN DÍA -->
+            <section class="card summary-card">
+                <div class="ring-container">
+                    <div id="calorieRing" class="progress-ring" style="--progress: 0%;">
+                        <div class="ring-inner">
+                            <span id="calorieTotal">0 kcal</span>
+                            <small>Meta: <span id="calorieGoal">2000</span> kcal</small>
+                            <small id="caloriePercent" class="percent">0%</small>
                         </div>
                     </div>
-                    <p class="muted">Meta: <span id="calorieGoal">2000</span> kcal</p>
                 </div>
-                <div class="summary-card">
-                    <span class="icon">🏋️</span>
-                    <h3>Gimnasio</h3>
-                    <p id="gymSummary" class="big-stat">No</p>
-                    <p id="gymMinutesSummary" class="muted">Sin actividad</p>
-                </div>
-                <div class="summary-card">
-                    <span class="icon">🏃</span>
-                    <h3>Carrera</h3>
-                    <p id="runningSummary" class="big-stat">0 km</p>
-                    <p id="runningTimeSummary" class="muted">Sin carrera</p>
-                </div>
-                <div class="summary-card">
-                    <span class="icon">⏱️</span>
-                    <h3>Ayuno Intermitente</h3>
-                    <p id="fastingSummary" class="big-stat">—</p>
-                    <p id="fastingSummaryText" class="muted">Sin registrar</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- REGISTRO DE COMIDAS -->
-        <section class="card">
-            <h2>🍽️ Comidas y Calorías</h2>
-            <div id="meals"></div>
-        </section>
-
-        <!-- REGISTRO DE ACTIVIDAD FÍSICA -->
-        <section class="card">
-            <h2>💪 Actividad Física</h2>
-            <div class="activity-grid">
-                <div class="activity-box">
-                    <button id="gymButton" class="btn-toggle">
+                <div class="summary-grid">
+                    <div class="summary-item">
                         <span>🏋️ Gimnasio</span>
-                        <span id="gymStatus" class="status-tag">No fui</span>
-                    </button>
-                    <div class="input-group">
-                        <label for="gymMinutes">Tiempo (minutos):</label>
-                        <input type="number" id="gymMinutes" min="0" placeholder="Ej: 45">
+                        <strong id="gymSummary">No</strong>
+                        <small id="gymMinutesSummary">Sin actividad</small>
                     </div>
-                </div>
-                <div class="activity-box">
-                    <button id="runButton" class="btn-toggle">
+                    <div class="summary-item">
                         <span>🏃 Carrera</span>
-                        <span id="runStatus" class="status-tag">No corrí</span>
+                        <strong id="runningSummary">0 km</strong>
+                        <small id="runningTimeSummary">Sin carrera</small>
+                    </div>
+                    <div class="summary-item">
+                        <span>⏱️ Ayuno</span>
+                        <strong id="fastingSummary">—</strong>
+                        <small id="fastingSummaryText">Sin registrar</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COMIDAS -->
+            <section class="card">
+                <h3>🍽️ Comidas del día</h3>
+                <div id="meals"></div>
+            </section>
+
+            <!-- EJERCICIO -->
+            <section class="card">
+                <h3>💪 Actividad Física</h3>
+                <div class="activity-row">
+                    <button type="button" id="gymButton" class="btn-toggle">
+                        🏋️ Gimnasio <span id="gymStatus">No fui</span>
                     </button>
-                    <div class="input-group-row">
-                        <div class="input-group">
-                            <label for="runningKm">Distancia (km):</label>
-                            <input type="number" id="runningKm" step="0.1" min="0" placeholder="Ej: 5.2">
-                        </div>
-                        <div class="input-group">
-                            <label for="runningMinutes">Tiempo (min):</label>
-                            <input type="number" id="runningMinutes" min="0" placeholder="Ej: 30">
-                        </div>
+                    <input type="number" id="gymMinutes" placeholder="Minutos gym" min="0">
+                </div>
+
+                <div class="activity-row">
+                    <button type="button" id="runButton" class="btn-toggle">
+                        🏃 Carrera <span id="runStatus">No corrí</span>
+                    </button>
+                    <input type="number" id="runningKm" placeholder="Kilómetros" step="0.1" min="0">
+                    <input type="number" id="runningMinutes" placeholder="Minutos run" min="0">
+                </div>
+
+                <textarea id="activityNotes" placeholder="Notas adicionales de la actividad física..."></textarea>
+            </section>
+
+            <!-- AYUNO -->
+            <section class="card">
+                <h3>⏱️ Ayuno Intermitente</h3>
+                <div class="fasting-inputs">
+                    <label>Inicio: <input type="time" id="fastingStart"></label>
+                    <label>Fin: <input type="time" id="fastingEnd"></label>
+                </div>
+                <div class="fasting-display">
+                    <span id="fastingBig" class="big-time">—</span>
+                    <div class="bar-container">
+                        <div id="fastingProgress" class="bar-fill" style="width: 0%;"></div>
                     </div>
+                    <p id="fastingMessage" class="muted">Completá las horas.</p>
                 </div>
-            </div>
-            <div class="input-group" style="margin-top: 1rem;">
-                <label for="activityNotes">Notas de la sesión / entrenamiento:</label>
-                <textarea id="activityNotes" placeholder="Ej: Buenas sensaciones, entrenamiento de piernas..."></textarea>
-            </div>
-        </section>
+            </section>
 
-        <!-- AYUNO INTERMITENTE -->
-        <section class="card">
-            <h2>⏱️ Ayuno Intermitente (Meta: 16 horas)</h2>
-            <div class="fasting-inputs">
-                <div class="input-group">
-                    <label for="fastingStart">Inicio del ayuno:</label>
-                    <input type="time" id="fastingStart">
-                </div>
-                <div class="input-group">
-                    <label for="fastingEnd">Fin del ayuno:</label>
-                    <input type="time" id="fastingEnd">
-                </div>
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="action-buttons">
+                <button type="button" id="saveButton" class="btn-primary">⚡ Guardar Día</button>
+                <button type="button" id="clearButton" class="btn-danger">🗑️ Eliminar Día</button>
             </div>
-            <div class="fasting-display">
-                <div class="fasting-time">
-                    <span>Tiempo total de ayuno:</span>
-                    <strong id="fastingBig">—</strong>
-                </div>
-                <div class="progress-bar-bg">
-                    <div id="fastingProgress" class="progress-bar-fill" style="width: 0%;"></div>
-                </div>
-                <p id="fastingMessage" class="muted">Ingresá tus horarios de inicio y fin.</p>
-            </div>
-        </section>
 
-        <!-- PERFIL Y CONFIGURACIÓN DE IA -->
-        <section class="card">
-            <h2>⚙️ Perfil y Meta de Calorías</h2>
-            <div class="profile-grid">
-                <div class="input-group">
-                    <label for="userWeight">Peso (kg):</label>
-                    <input type="number" id="userWeight" step="0.1" placeholder="Ej: 75">
-                </div>
-                <div class="input-group">
-                    <label for="userHeight">Altura (cm):</label>
-                    <input type="number" id="userHeight" placeholder="Ej: 175">
-                </div>
-                <div class="input-group">
-                    <label for="userAge">Edad:</label>
-                    <input type="number" id="userAge" placeholder="Ej: 28">
-                </div>
-                <div class="input-group">
-                    <label for="userGender">Sexo biológico:</label>
-                    <select id="userGender">
-                        <option value="hombre">Hombre</option>
-                        <option value="mujer">Mujer</option>
-                    </select>
-                </div>
-                <div class="input-group full-width">
-                    <label for="userActivity">Nivel de Actividad Diaria:</label>
-                    <select id="userActivity">
-                        <option value="1.2">Sedentario (poco o nada de ejercicio)</option>
-                        <option value="1.375">Ligero (1-3 días a la semana)</option>
-                        <option value="1.55">Moderado (3-5 días a la semana)</option>
-                        <option value="1.725">Fuerte (6-7 días a la semana)</option>
-                        <option value="1.9">Muy Fuerte (atleta profesional / doble turno)</option>
-                    </select>
-                </div>
-                <div class="input-group full-width" style="margin-top: 0.5rem;">
-                    <label for="userApiKey">Gemini API Key (para la estimación con IA):</label>
-                    <div class="manual-goal-box">
-                        <input type="password" id="userApiKey" placeholder="Pegá tu API Key de Gemini aquí">
-                        <button id="btnSaveApiKey" class="btn-secondary">Guardar Key</button>
-                    </div>
-                </div>
-            </div>
-            <div class="profile-actions">
-                <button id="btnCalcSuggested" class="btn-secondary">🧮 Calcular Meta Sugerida</button>
-                <div class="manual-goal-box">
-                    <input type="number" id="userManualGoal" placeholder="O ingresá meta manual">
-                    <button id="btnSaveManual" class="btn-secondary">Guardar Meta</button>
-                </div>
-            </div>
-            <p class="muted" style="margin-top: 0.5rem;">Estado: <span id="profileStatusBadge" class="badge">Estándar (2000 kcal)</span></p>
-        </section>
+            <!-- GRÁFICO SEMANAL -->
+            <section class="card">
+                <h3>📊 Últimos 7 Días</h3>
+                <div id="weeklyChart" class="chart-container"></div>
+            </section>
 
-        <!-- ACCIONES -->
-        <div class="main-actions">
-            <button id="saveButton" class="btn-primary">💾 Guardar Día en Supabase</button>
-            <button id="clearButton" class="btn-danger">🗑️ Borrar Día</button>
-        </div>
-
-        <!-- GRÁFICO E HISTORIAL -->
-        <section class="card">
-            <h2>📈 Consumo de Calorías (Últimos 7 días)</h2>
-            <div id="weeklyChart" class="chart-container"></div>
-        </section>
-
-        <section class="card">
-            <div class="history-header">
-                <h2>📜 Historial de Registros</h2>
-                <span id="daysCount" class="badge">0 días</span>
-            </div>
-            <div id="history" class="history-list"></div>
-        </section>
-
+            <!-- HISTORIAL -->
+            <section class="card">
+                <div class="history-header">
+                    <h3>📜 Historial (<span id="daysCount">0 días</span>)</h3>
+                </div>
+                <div id="history"></div>
+            </section>
+        </main>
     </div>
 
-    <div id="toast" class="toast">✓ Guardado</div>
+    <!-- MODAL DE CONFIGURACIÓN Y PERFIL -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content settings-box">
+            <div class="modal-header">
+                <h2>⚙️ Perfil y Configuración</h2>
+                <span id="btnCloseSettings" class="close-btn">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <span id="profileStatusBadge" class="badge">Meta Sugerida</span>
+
+                <div class="settings-section">
+                    <h4>📐 Calculadora de Meta Diaria</h4>
+                    <div class="grid-2">
+                        <label>Peso (kg): <input type="number" id="userWeight" placeholder="70"></label>
+                        <label>Altura (cm): <input type="number" id="userHeight" placeholder="175"></label>
+                        <label>Edad: <input type="number" id="userAge" placeholder="25"></label>
+                        <label>Sexo:
+                            <select id="userGender">
+                                <option value="hombre">Hombre</option>
+                                <option value="mujer">Mujer</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>Nivel de Actividad:
+                        <select id="userActivity">
+                            <option value="1.2">Sedentario (poco o nada de ejercicio)</option>
+                            <option value="1.375">Ligero (1-3 días a la semana)</option>
+                            <option value="1.55">Moderado (3-5 días a la semana)</option>
+                            <option value="1.725">Fuerte (6-7 días a la semana)</option>
+                        </select>
+                    </label>
+                    <button type="button" id="btnCalcSuggested" class="btn-secondary">Calcular y Guardar Sugerida</button>
+                </div>
+
+                <hr class="divider">
+
+                <div class="settings-section">
+                    <h4>🎯 Meta Manual</h4>
+                    <div class="row-flex">
+                        <input type="number" id="userManualGoal" placeholder="ej: 2200 kcal">
+                        <button type="button" id="btnSaveManual" class="btn-secondary">Guardar Meta</button>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="settings-section">
+                    <h4>🤖 Clave de Gemini IA</h4>
+                    <div class="row-flex">
+                        <input type="password" id="userApiKey" placeholder="AIzaSy...">
+                        <button type="button" id="btnSaveApiKey" class="btn-secondary">Guardar API Key</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST DE NOTIFICACIONES -->
+    <div id="toast" class="toast"></div>
 
     <script src="app.js"></script>
 </body>
