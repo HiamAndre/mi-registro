@@ -111,6 +111,7 @@ body {
     font-weight: 600;
 }
 
+input[type="text"],
 input[type="date"], 
 input[type="number"], 
 input[type="time"], 

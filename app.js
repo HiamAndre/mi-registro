@@ -58,8 +58,8 @@ function setupAuth() {
         const errorMsg = $("authError");
         errorMsg.textContent = "";
 
-        // Si el usuario no puso '@', le formateamos un mail automático de fondo (ej: hiam -> hiam@app.com)
-        const email = userInput.includes('@') ? userInput : `${userInput}@app.com`;
+        // Usamos @gmail.com internamente para cumplir con el formato de Supabase
+        const email = userInput.includes('@') ? userInput : `${userInput}@gmail.com`;
 
         if (isSignUpMode) {
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
@@ -90,26 +90,10 @@ function setupAuth() {
             $("authModal").style.display = "none";
             $("appContainer").style.display = "flex";
             
-            // Mostrar solo el usuario limpio en el badge superior (sin el @app.com)
-            const cleanUser = currentUser.email.replace('@app.com', '');
+            // Muestra solo el nombre de usuario limpio en la barra
+            const cleanUser = currentUser.email.split('@')[0];
             $("userEmailBadge").textContent = `👤 ${cleanUser}`;
             
-            loadAppContent();
-        } else {
-            currentUser = null;
-            $("authModal").style.display = "flex";
-            $("appContainer").style.display = "none";
-        }
-    });
-}
-
-    // Escuchar cambios de sesión en tiempo real
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            currentUser = session.user;
-            $("authModal").style.display = "none";
-            $("appContainer").style.display = "flex";
-            $("userEmailBadge").textContent = currentUser.email;
             loadAppContent();
         } else {
             currentUser = null;
