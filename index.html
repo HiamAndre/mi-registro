@@ -50,11 +50,17 @@
         <main class="main-content">
             <!-- PESTAÑA 1: REGISTRO DIARIO -->
             <div id="tabRegister" class="tab-content active">
-                <!-- SELECCIÓN DE FECHA -->
+                <!-- SELECCIÓN DE FECHA Y PESO DEL DÍA -->
                 <section class="card date-card">
-                    <label for="date">📅 Fecha:</label>
-                    <input type="date" id="date">
+                    <div class="date-group">
+                        <label for="date">📅 Fecha:</label>
+                        <input type="date" id="date">
+                    </div>
                     <span id="prettyDate" class="pretty-date"></span>
+                    <div class="weight-group">
+                        <label for="dailyWeight">⚖️ Peso (kg):</label>
+                        <input type="number" id="dailyWeight" placeholder="ej: 75.5" step="0.1" min="0">
+                    </div>
                 </section>
 
                 <!-- RESUMEN DÍA -->
@@ -159,7 +165,13 @@
                     </div>
                 </section>
 
-                <!-- GRÁFICO SEMANAL -->
+                <!-- GRÁFICO DE EVOLUCIÓN DE PESO -->
+                <section class="card">
+                    <h3>📉 Evolución del Peso (Últimos Registros)</h3>
+                    <div id="weightChart" class="line-chart-container"></div>
+                </section>
+
+                <!-- GRÁFICO SEMANAL DE CALORÍAS -->
                 <section class="card">
                     <h3>📊 Consumo de los Últimos 7 Días</h3>
                     <div id="weeklyChart" class="chart-container"></div>
@@ -190,7 +202,7 @@
                 <div class="settings-section">
                     <h4>📐 Calculadora de Meta Diaria</h4>
                     <div class="grid-2">
-                        <label>Peso (kg): <input type="number" id="userWeight" placeholder="70"></label>
+                        <label>Peso Base (kg): <input type="number" id="userWeight" placeholder="70"></label>
                         <label>Altura (cm): <input type="number" id="userHeight" placeholder="175"></label>
                         <label>Edad: <input type="number" id="userAge" placeholder="25"></label>
                         <label>Sexo:

@@ -40,6 +40,7 @@ function formatDate(dateString) {
 
 function emptyRecord() {
     return {
+        dailyWeight: "",
         breakfast: "", breakfastCal: 0, lunch: "", lunchCal: 0,
         snack: "", snackCal: 0, dinner: "", dinnerCal: 0,
         other: "", otherCal: 0, gym: false, gymMinutes: 0,
@@ -74,6 +75,7 @@ function setupTabs() {
         
         renderHistoryAndStats();
         renderChart();
+        renderWeightChart();
     });
 }
 
@@ -114,9 +116,7 @@ async function estimateCaloriesAI(mealId) {
     if (btn) btn.classList.add("loading");
     showToast("✨ Consultando a la IA...");
 
-    const availableModels = [
-        "gemini-3.6-flash"
-    ];
+    const availableModels = ["gemini-3.6-flash"];
 
     const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
 
@@ -258,6 +258,8 @@ async function loadRecord() {
 
     const record = (data && data.data) ? data.data : emptyRecord();
 
+    if ($("dailyWeight")) $("dailyWeight").value = record.dailyWeight || "";
+
     meals.forEach(m => {
         if ($(`${m.id}Text`)) $(`${m.id}Text`).value = record[m.id] || "";
         if ($(`${m.id}Cal`)) $(`${m.id}Cal`).value = record[m.id + "Cal"] || "";
@@ -347,6 +349,7 @@ async function saveUserProfileCloud(profileData) {
 
 function getFormData() {
     return {
+        dailyWeight: $("dailyWeight")?.value || "",
         breakfast: $("breakfastText")?.value || "",
         breakfastCal: Number($("breakfastCal")?.value || 0),
         lunch: $("lunchText")?.value || "",
@@ -477,6 +480,7 @@ async function renderHistoryAndStats() {
         const record = row.data;
         const calories = calculateCalories(record);
         const fasting = calculateFastingMinutes(record);
+        const weightText = record.dailyWeight ? `⚖️ ${record.dailyWeight} kg &nbsp;·&nbsp; ` : "";
 
         totalCal += calories;
         totalKm += Number(record.runningKm || 0);
@@ -488,7 +492,7 @@ async function renderHistoryAndStats() {
             <div>
                 <div class="history-date">${formatDate(date)}</div>
                 <div class="history-details">
-                    🔥 ${calories} kcal &nbsp;·&nbsp; ${record.gym ? "🏋️ Gimnasio" : "—"} &nbsp;·&nbsp; 🏃 ${record.runningKm || 0} km &nbsp;·&nbsp; ⏱️ ${fasting === null ? "—" : formatDuration(fasting)}
+                    ${weightText}🔥 ${calories} kcal &nbsp;·&nbsp; ${record.gym ? "🏋️ Gym" : "—"} &nbsp;·&nbsp; 🏃 ${record.runningKm || 0} km &nbsp;·&nbsp; ⏱️ ${fasting === null ? "—" : formatDuration(fasting)}
                 </div>
             </div>
             <button class="history-open" data-date="${date}">Abrir</button>
@@ -508,6 +512,67 @@ async function renderHistoryAndStats() {
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
     });
+}
+
+/* ---------------------------------------------------------
+   GRÁFICO DE EVOLUCIÓN DE PESO
+   --------------------------------------------------------- */
+async function renderWeightChart() {
+    if (!currentUser) return;
+
+    const { data: rows } = await supabaseClient
+        .from('registros')
+        .select('date, data')
+        .eq('user_id', currentUser.id)
+        .order('date', { ascending: true })
+        .limit(30);
+
+    const container = $("weightChart");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const weightData = (rows || [])
+        .map(r => ({ date: r.date, weight: parseFloat(r.data?.dailyWeight) }))
+        .filter(item => !isNaN(item.weight) && item.weight > 0);
+
+    if (weightData.length < 2) {
+        container.innerHTML = `<p class="muted" style="text-align: center; padding-top: 40px;">Registrá tu peso al menos en 2 días diferentes para ver el gráfico de tendencia.</p>`;
+        return;
+    }
+
+    const width = 500;
+    const height = 150;
+    const padding = 30;
+
+    const weights = weightData.map(d => d.weight);
+    let minW = Math.min(...weights) - 1;
+    let maxW = Math.max(...weights) + 1;
+    if (minW === maxW) { minW -= 1; maxW += 1; }
+
+    const points = weightData.map((d, index) => {
+        const x = padding + (index / (weightData.length - 1)) * (width - padding * 2);
+        const y = height - padding - ((d.weight - minW) / (maxW - minW)) * (height - padding * 2);
+        return { x, y, weight: d.weight, date: d.date };
+    });
+
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+    let svgHtml = `
+        <svg viewBox="0 0 ${width} ${height}" class="weight-svg">
+            <path d="${pathD}" class="weight-line" />
+    `;
+
+    points.forEach(p => {
+        const shortDate = p.date.split('-').slice(1).join('/');
+        svgHtml += `
+            <circle cx="${p.x}" cy="${p.y}" r="5" class="weight-point" />
+            <text x="${p.x}" y="${p.y - 10}" class="weight-label">${p.weight}kg</text>
+            <text x="${p.x}" y="${height - 10}" class="weight-label" style="fill: var(--muted-color);">${shortDate}</text>
+        `;
+    });
+
+    svgHtml += `</svg>`;
+    container.innerHTML = svgHtml;
 }
 
 async function renderChart() {
@@ -561,6 +626,7 @@ function updateEverything() {
     updateFasting();
     renderHistoryAndStats();
     renderChart();
+    renderWeightChart();
 }
 
 function showToast(message) {
@@ -611,18 +677,14 @@ function setupSettingsModal() {
     const closeModal = () => {
         if (!modal) return;
         modal.style.opacity = "0";
-        setTimeout(() => {
-            modal.style.display = "none";
-        }, 200);
+        setTimeout(() => { modal.style.display = "none"; }, 200);
     };
 
     const openModal = () => {
         if (!modal) return;
         modal.style.display = "flex";
         modal.style.opacity = "0";
-        setTimeout(() => {
-            modal.style.opacity = "1";
-        }, 10);
+        setTimeout(() => { modal.style.opacity = "1"; }, 10);
     };
 
     if (openBtn) openBtn.addEventListener("click", openModal);
