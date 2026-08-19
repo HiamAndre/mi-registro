@@ -772,30 +772,27 @@ button {
 
 
 /* ---------------------------------------------------------
-   COMIDAS
+   FORMULARIO DE COMIDAS (NUEVO DISEÑO CLEAN)
    --------------------------------------------------------- */
 
-.meal {
+.meal-form {
 
-  display: grid;
+  display: flex;
 
-  grid-template-columns:
-    44px 1fr;
+  align-items: flex-start;
 
-  gap: 12px;
+  gap: 14px;
 
-  padding:
-    13px 0;
+  padding: 16px 0;
 
-  border-top:
-    1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 
 }
 
 
-.meal:first-child {
+.meal-form:last-child {
 
-  border-top: 0;
+  border-bottom: none;
 
 }
 
@@ -805,6 +802,8 @@ button {
   width: 44px;
 
   height: 44px;
+
+  flex-shrink: 0;
 
   display: grid;
 
@@ -823,7 +822,7 @@ button {
 }
 
 
-.meal:hover .meal-icon {
+.meal-form:hover .meal-icon {
 
   transform:
     scale(1.08)
@@ -832,45 +831,96 @@ button {
 }
 
 
-.meal-title {
+.meal-content {
+
+  flex: 1;
 
   display: flex;
 
-  align-items: center;
+  flex-direction: column;
 
-  justify-content: space-between;
-
-  gap: 10px;
+  gap: 8px;
 
 }
 
 
-.meal-title strong {
+.meal-title {
 
   font-size: 14px;
 
-}
-
-
-.meal-calories {
-
-  color: var(--text-soft);
-
-  font-size: 11px;
+  color: var(--text);
 
 }
 
 
-.meal-description {
+.meal-inputs-container {
 
-  margin:
-    5px 0 0;
+  display: flex;
 
-  color: var(--text-soft);
+  gap: 10px;
+
+  flex-wrap: wrap;
+
+}
+
+
+.meal-input,
+.meal-cal-input {
+
+  padding: 10px 14px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 12px;
+
+  background: var(--surface-soft);
+
+  color: var(--text);
 
   font-size: 13px;
 
-  white-space: pre-wrap;
+  outline: none;
+
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+
+}
+
+
+.meal-input {
+
+  flex: 2;
+
+  min-width: 170px;
+
+  resize: vertical;
+
+  min-height: 42px;
+
+  height: 42px;
+
+}
+
+
+.meal-cal-input {
+
+  flex: 1;
+
+  min-width: 100px;
+
+}
+
+
+.meal-input:focus,
+.meal-cal-input:focus {
+
+  border-color: var(--primary);
+
+  background: var(--surface);
+
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 
 }
 
@@ -1069,10 +1119,10 @@ button {
 }
 
 
-input::placeholder {
+input::placeholder,
+textarea::placeholder {
 
-  color:
-    #94a3b8;
+  color: #94a3b8;
 
 }
 

@@ -332,18 +332,6 @@ function calculateFastingMinutes(record) {
         endParts[1];
 
 
-    /*
-       Si el ayuno termina al día siguiente.
-
-       Ejemplo:
-
-       Inicio: 21:00
-       Fin:    13:00
-
-       13:00 es menor que 21:00,
-       entonces sumamos 24 horas.
-    */
-
     if (end <= start) {
 
         end += 24 * 60;
@@ -437,26 +425,26 @@ function createMeals() {
             <div class="meal-content">
 
                 <div class="meal-title">
-
-                    <strong>
-                        ${meal.name}
-                    </strong>
-
+                    <strong>${meal.name}</strong>
                 </div>
 
-                <textarea
-                    id="${meal.id}Text"
-                    class="meal-input"
-                    placeholder="¿Qué comiste?"
-                ></textarea>
+                <div class="meal-inputs-container">
 
-                <input
-                    id="${meal.id}Cal"
-                    class="meal-cal-input"
-                    type="number"
-                    min="0"
-                    placeholder="Calorías"
-                >
+                    <textarea
+                        id="${meal.id}Text"
+                        class="meal-input"
+                        placeholder="¿Qué comiste?"
+                    ></textarea>
+
+                    <input
+                        id="${meal.id}Cal"
+                        class="meal-cal-input"
+                        type="number"
+                        min="0"
+                        placeholder="Calorías (kcal)"
+                    >
+
+                </div>
 
             </div>
 
@@ -1178,18 +1166,6 @@ function renderChart() {
    --------------------------------------------------------- */
 
 function updateMealsPreview() {
-
-    /*
-       Esta función mantiene actualizado
-       el resumen de alimentación.
-
-       El HTML inicial tiene un contenedor
-       llamado #meals.
-
-       Si todavía no existe el contenido
-       generado, no hacemos nada.
-    */
-
 
     const mealContainer =
         $("meals");
