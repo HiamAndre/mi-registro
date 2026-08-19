@@ -1,297 +1,228 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <meta name="theme-color" content="#0f172a">
-  <title>Mi Registro</title>
-
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Registro Diario</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- SDK Oficial de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
 
-  <header class="topbar">
-    <div class="container nav">
-      <div class="brand">
-        <div class="logo">✓</div>
-
-        <div>
-          <strong>Mi Registro</strong>
-          <span>Tu día, en un vistazo</span>
-        </div>
-      </div>
-
-      <button id="themeToggle" class="icon-button">
-        🌙
-      </button>
-    </div>
-  </header>
-
-
-  <main class="container">
-
-    <!-- CABECERA -->
-    <section class="hero">
-      <div>
-        <p id="prettyDate" class="date-label"></p>
-        <h1>¿Cómo fue tu día?</h1>
-        <p class="subtitle">
-          Registrá lo importante y mirá tu progreso.
-        </p>
-      </div>
-
-      <div class="date-picker">
-        📅
-        <input type="date" id="date">
-      </div>
-    </section>
-
-
-    <!-- RESUMEN -->
-    <section class="summary-grid">
-
-      <article class="card calories-card">
-        <div class="progress-ring" id="calorieRing">
-          <span id="caloriePercent">0%</span>
-        </div>
-
-        <div>
-          <small>Calorías del día</small>
-          <h2 id="calorieTotal">0 kcal</h2>
-          <span class="muted">
-            Meta: <span id="calorieGoal">2000</span> kcal
-          </span>
-        </div>
-      </article>
-
-
-      <article class="card statistic">
-        <span class="stat-icon">🏋️</span>
-        <small>Gimnasio</small>
-        <h2 id="gymSummary">No</h2>
-        <span id="gymMinutesSummary" class="muted">Sin actividad</span>
-      </article>
-
-
-      <article class="card statistic">
-        <span class="stat-icon">🏃</span>
-        <small>Carrera</small>
-        <h2 id="runningSummary">0 km</h2>
-        <span id="runningTimeSummary" class="muted">Sin carrera</span>
-      </article>
-
-
-      <article class="card statistic">
-        <span class="stat-icon">⏱️</span>
-        <small>Ayuno</small>
-        <h2 id="fastingSummary">—</h2>
-        <span id="fastingSummaryText" class="muted">Sin registrar</span>
-      </article>
-
-    </section>
-
-
-    <div class="content-grid">
-
-      <!-- CONFIGURACIÓN DE PERFIL Y META CALÓRICA (NUEVO) -->
-      <section class="card full">
-        <div class="section-header">
-          <div>
-            <h2>⚙️ Perfil y Meta de Calorías</h2>
-            <p>Calculá tu gasto según tus datos o establecé un objetivo manual.</p>
-          </div>
-          <span id="profileStatusBadge" class="badge">Meta Personalizada</span>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label>Peso (kg)</label>
-            <input type="number" id="userWeight" placeholder="Ej: 70" step="0.1" min="0">
-          </div>
-
-          <div class="field">
-            <label>Altura (cm)</label>
-            <input type="number" id="userHeight" placeholder="Ej: 175" min="0">
-          </div>
-
-          <div class="field">
-            <label>Edad</label>
-            <input type="number" id="userAge" placeholder="Ej: 25" min="0">
-          </div>
-
-          <div class="field">
-            <label>Sexo</label>
-            <select id="userGender" class="meal-input" style="width: 100%; height: auto;">
-              <option value="hombre">Hombre</option>
-              <option value="mujer">Mujer</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Nivel de Actividad</label>
-            <select id="userActivity" class="meal-input" style="width: 100%; height: auto;">
-              <option value="1.2">Sedentario (poco/nada de ejercicio)</option>
-              <option value="1.375">Ligero (1-3 días/semana)</option>
-              <option value="1.55">Moderado (3-5 días/semana)</option>
-              <option value="1.725">Fuerte (6-7 días/semana)</option>
-              <option value="1.9">Muy fuerte (atleta / doble turno)</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Meta Manual (kcal - opcional)</label>
-            <input type="number" id="userManualGoal" placeholder="Ej: 2200" min="0">
-          </div>
-        </div>
-
-        <div class="actions" style="margin-bottom: 0; margin-top: 15px;">
-          <button id="btnCalcSuggested" class="button secondary" type="button">Usar Meta Sugerida</button>
-          <button id="btnSaveManual" class="button primary" type="button">Guardar Meta Manual</button>
-        </div>
-      </section>
-
-
-      <!-- ALIMENTACIÓN -->
-      <section class="card">
-        <div class="section-header">
-          <div>
-            <h2>🍽️ Alimentación</h2>
-            <p>Registrá lo que comiste.</p>
-          </div>
-          <span class="badge">Calorías</span>
-        </div>
-
-        <div id="meals"></div>
-      </section>
-
-
-      <!-- ACTIVIDAD -->
-      <section class="card">
-        <div class="section-header">
-          <div>
-            <h2>🏋️ Movimiento</h2>
-            <p>¿Qué actividad hiciste?</p>
-          </div>
-        </div>
-
-        <div class="activity-buttons">
-          <button id="gymButton" class="activity-button">
-            <span>🏋️</span>
-            <strong>Gimnasio</strong>
-            <small id="gymStatus">No fui</small>
-          </button>
-
-          <button id="runButton" class="activity-button">
-            <span>🏃</span>
-            <strong>Corrí</strong>
-            <small id="runStatus">No corrí</small>
-          </button>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label>Minutos de gimnasio</label>
-            <input type="number" id="gymMinutes" placeholder="60" min="0">
-          </div>
-
-          <div class="field">
-            <label>Kilómetros corridos</label>
-            <input type="number" id="runningKm" placeholder="5.0" min="0" step="0.1">
-          </div>
-
-          <div class="field">
-            <label>Tiempo de carrera</label>
-            <input type="number" id="runningMinutes" placeholder="30" min="0">
-          </div>
-
-          <div class="field">
-            <label>Notas</label>
-            <input type="text" id="activityNotes" placeholder="Opcional">
-          </div>
-        </div>
-      </section>
-
-
-      <!-- AYUNO -->
-      <section class="card full">
-        <div class="section-header">
-          <div>
-            <h2>⏱️ Ayuno intermitente</h2>
-            <p>Indicá cuándo comenzó y terminó.</p>
-          </div>
-          <span class="badge">Objetivo 16 h</span>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label>Inicio del ayuno</label>
-            <input type="time" id="fastingStart">
-          </div>
-
-          <div class="field">
-            <label>Fin del ayuno</label>
-            <input type="time" id="fastingEnd">
-          </div>
-        </div>
-
-        <div class="fasting-display">
-          <div>
-            <strong id="fastingBig">—</strong>
-            <span>duración</span>
-          </div>
-
-          <div class="fasting-progress">
-            <div class="progress-background">
-              <div id="fastingProgress" class="progress-fill"></div>
+    <div class="container">
+        
+        <!-- ENCABEZADO -->
+        <header class="header">
+            <div>
+                <h1>Mi Registro</h1>
+                <p id="prettyDate" class="muted">Cargando fecha...</p>
             </div>
-            <small id="fastingMessage">Completá las horas.</small>
-          </div>
+            <div class="header-actions">
+                <span id="cloudStatus" class="badge">Conectando...</span>
+                <button id="themeToggle" class="btn-icon" title="Cambiar tema">🌙</button>
+            </div>
+        </header>
+
+        <!-- SELECCIÓN DE FECHA -->
+        <section class="card">
+            <div class="date-selector">
+                <label for="date">Fecha del registro:</label>
+                <input type="date" id="date">
+            </div>
+        </section>
+
+        <!-- RESUMEN DE HOY -->
+        <section class="card">
+            <h2>📊 Resumen del Día</h2>
+            
+            <div class="summary-grid">
+                <!-- Anillo / Progreso de Calorías -->
+                <div class="summary-card">
+                    <div class="ring-container">
+                        <div id="calorieRing" class="progress-ring" style="--progress: 0%;">
+                            <div class="ring-inner">
+                                <span id="calorieTotal" class="ring-value">0 kcal</span>
+                                <span id="caloriePercent" class="ring-sub">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="muted">Meta: <span id="calorieGoal">2000</span> kcal</p>
+                </div>
+
+                <!-- Gimnasio -->
+                <div class="summary-card">
+                    <span class="icon">🏋️</span>
+                    <h3>Gimnasio</h3>
+                    <p id="gymSummary" class="big-stat">No</p>
+                    <p id="gymMinutesSummary" class="muted">Sin actividad</p>
+                </div>
+
+                <!-- Carrera -->
+                <div class="summary-card">
+                    <span class="icon">🏃</span>
+                    <h3>Carrera</h3>
+                    <p id="runningSummary" class="big-stat">0 km</p>
+                    <p id="runningTimeSummary" class="muted">Sin carrera</p>
+                </div>
+
+                <!-- Ayuno -->
+                <div class="summary-card">
+                    <span class="icon">⏱️</span>
+                    <h3>Ayuno Intermitente</h3>
+                    <p id="fastingSummary" class="big-stat">—</p>
+                    <p id="fastingSummaryText" class="muted">Sin registrar</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- REGISTRO DE COMIDAS -->
+        <section class="card">
+            <h2>🍽️ Comidas y Calorías</h2>
+            <div id="meals"></div>
+        </section>
+
+        <!-- REGISTRO DE ACTIVIDAD FÍSICA -->
+        <section class="card">
+            <h2>💪 Actividad Física</h2>
+            
+            <div class="activity-grid">
+                <!-- Gimnasio -->
+                <div class="activity-box">
+                    <button id="gymButton" class="btn-toggle">
+                        <span>🏋️ Gimnasio</span>
+                        <span id="gymStatus" class="status-tag">No fui</span>
+                    </button>
+                    <div class="input-group">
+                        <label for="gymMinutes">Tiempo (minutos):</label>
+                        <input type="number" id="gymMinutes" min="0" placeholder="Ej: 45">
+                    </div>
+                </div>
+
+                <!-- Running -->
+                <div class="activity-box">
+                    <button id="runButton" class="btn-toggle">
+                        <span>🏃 Carrera</span>
+                        <span id="runStatus" class="status-tag">No corrí</span>
+                    </button>
+                    <div class="input-group-row">
+                        <div class="input-group">
+                            <label for="runningKm">Distancia (km):</label>
+                            <input type="number" id="runningKm" step="0.1" min="0" placeholder="Ej: 5.2">
+                        </div>
+                        <div class="input-group">
+                            <label for="runningMinutes">Tiempo (min):</label>
+                            <input type="number" id="runningMinutes" min="0" placeholder="Ej: 30">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas de la Actividad -->
+            <div class="input-group" style="margin-top: 1rem;">
+                <label for="activityNotes">Notas de la sesión / entrenamiento:</label>
+                <textarea id="activityNotes" placeholder="Ej: Buenas sensaciones, entrenamiento de piernas y hombros..."></textarea>
+            </div>
+        </section>
+
+        <!-- AYUNO INTERMITENTE -->
+        <section class="card">
+            <h2>⏱️ Ayuno Intermitente (Meta: 16 horas)</h2>
+            
+            <div class="fasting-inputs">
+                <div class="input-group">
+                    <label for="fastingStart">Inicio del ayuno:</label>
+                    <input type="time" id="fastingStart">
+                </div>
+                <div class="input-group">
+                    <label for="fastingEnd">Fin del ayuno:</label>
+                    <input type="time" id="fastingEnd">
+                </div>
+            </div>
+
+            <div class="fasting-display">
+                <div class="fasting-time">
+                    <span>Tiempo total de ayuno:</span>
+                    <strong id="fastingBig">—</strong>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="fastingProgress" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <p id="fastingMessage" class="muted">Ingresá tus horarios de inicio y fin.</p>
+            </div>
+        </section>
+
+        <!-- PERFIL Y META CALÓRICA DINÁMICA -->
+        <section class="card">
+            <h2>⚙️ Perfil y Meta de Calorías</h2>
+            
+            <div class="profile-grid">
+                <div class="input-group">
+                    <label for="userWeight">Peso (kg):</label>
+                    <input type="number" id="userWeight" step="0.1" placeholder="Ej: 75">
+                </div>
+                <div class="input-group">
+                    <label for="userHeight">Altura (cm):</label>
+                    <input type="number" id="userHeight" placeholder="Ej: 175">
+                </div>
+                <div class="input-group">
+                    <label for="userAge">Edad:</label>
+                    <input type="number" id="userAge" placeholder="Ej: 28">
+                </div>
+                <div class="input-group">
+                    <label for="userGender">Sexo biológico:</label>
+                    <select id="userGender">
+                        <option value="hombre">Hombre</option>
+                        <option value="mujer">Mujer</option>
+                    </select>
+                </div>
+                <div class="input-group full-width">
+                    <label for="userActivity">Nivel de Actividad Diaria:</label>
+                    <select id="userActivity">
+                        <option value="1.2">Sedentario (poco o nada de ejercicio)</option>
+                        <option value="1.375">Ligero (1-3 días a la semana)</option>
+                        <option value="1.55">Moderado (3-5 días a la semana)</option>
+                        <option value="1.725">Fuerte (6-7 días a la semana)</option>
+                        <option value="1.9">Muy Fuerte (atleta profesional / doble turno)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button id="btnCalcSuggested" class="btn-secondary">🧮 Calcular Meta Sugerida</button>
+                <div class="manual-goal-box">
+                    <input type="number" id="userManualGoal" placeholder="O ingresá meta manual">
+                    <button id="btnSaveManual" class="btn-secondary">Guardar Meta</button>
+                </div>
+            </div>
+            <p class="muted" style="margin-top: 0.5rem;">Estado: <span id="profileStatusBadge" class="badge">Estándar (2000 kcal)</span></p>
+        </section>
+
+        <!-- BOTONES DE ACCIÓN PRINCIPALES -->
+        <div class="main-actions">
+            <button id="saveButton" class="btn-primary">💾 Guardar Día en Supabase</button>
+            <button id="clearButton" class="btn-danger">🗑️ Borrar Día</button>
         </div>
-      </section>
 
+        <!-- HISTORIAL Y GRÁFICO SEMANAL -->
+        <section class="card">
+            <h2>📈 Consumo de Calorías (Últimos 7 días)</h2>
+            <div id="weeklyChart" class="chart-container"></div>
+        </section>
 
-      <!-- GRÁFICO -->
-      <section class="card full">
-        <div class="section-header">
-          <div>
-            <h2>📈 Últimos 7 días</h2>
-            <p>Tu consumo de calorías.</p>
-          </div>
-        </div>
-
-        <div id="weeklyChart" class="chart"></div>
-      </section>
-
-
-      <!-- HISTORIAL -->
-      <section class="card full">
-        <div class="section-header">
-          <div>
-            <h2>📚 Historial</h2>
-            <p>Tus días registrados.</p>
-          </div>
-          <span id="daysCount" class="badge">0 días</span>
-        </div>
-
-        <div id="history"></div>
-      </section>
+        <section class="card">
+            <div class="history-header">
+                <h2>📜 Historial de Registros</h2>
+                <span id="daysCount" class="badge">0 días</span>
+            </div>
+            <div id="history" class="history-list"></div>
+        </section>
 
     </div>
 
+    <!-- TOAST DE NOTIFICACIÓN -->
+    <div id="toast" class="toast">✓ Guardado</div>
 
-    <!-- BOTONES PRINCIPALES -->
-    <div class="actions">
-      <button id="saveButton" class="button primary">Guardar día</button>
-      <button id="clearButton" class="button secondary">Limpiar</button>
-    </div>
-
-  </main>
-
-
-  <div id="toast" class="toast">✓ Día guardado</div>
-
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
