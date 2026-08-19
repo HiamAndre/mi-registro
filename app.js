@@ -5,8 +5,8 @@
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
 
-// Obtiene la API Key guardada en localStorage o la inicia vacía
-let GEMINI_API_KEY = localStorage.getItem("user_gemini_key") || ""; 
+// Clave por defecto opcional (si el usuario no la guarda en su perfil)
+let GEMINI_API_KEY = ""; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -53,6 +53,10 @@ function emptyRecord() {
    INTEGRACIÓN CON GEMINI IA (CÁLCULO DE CALORÍAS)
    --------------------------------------------------------- */
 
+function getActiveApiKey() {
+    return $("userApiKey")?.value.trim() || currentProfile?.apiKey || localStorage.getItem("gemini_api_key") || GEMINI_API_KEY;
+}
+
 async function estimateCaloriesAI(mealId) {
     const textInput = $(`${mealId}Text`);
     const calInput = $(`${mealId}Cal`);
@@ -63,10 +67,10 @@ async function estimateCaloriesAI(mealId) {
         return;
     }
 
-    const activeApiKey = GEMINI_API_KEY || localStorage.getItem("user_gemini_key");
+    const activeApiKey = getActiveApiKey();
 
     if (!activeApiKey) {
-        alert("Por favor ingresá tu API Key de Gemini en la sección de Perfil y Configuración.");
+        alert("Debes ingresar tu Gemini API Key en la sección de Perfil para usar esta función.");
         return;
     }
 
@@ -74,8 +78,8 @@ async function estimateCaloriesAI(mealId) {
 
     try {
         const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
-         console.log("Key usada:", activeApiKey);
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeApiKey}`, {
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -85,6 +89,12 @@ async function estimateCaloriesAI(mealId) {
 
         const result = await response.json();
         
+        if (result.error) {
+            console.error("API Error:", result.error);
+            showToast(`❌ Error: ${result.error.message || 'Petición denegada'}`);
+            return;
+        }
+
         if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
             const responseText = result.candidates[0].content.parts[0].text.trim();
             const estimatedCalories = parseInt(responseText.replace(/\D/g, ''), 10);
@@ -97,7 +107,7 @@ async function estimateCaloriesAI(mealId) {
                 showToast("❌ No se pudo interpretar la respuesta");
             }
         } else {
-            showToast("❌ Error al consultar la IA (revisá tu API Key)");
+            showToast("❌ Error al consultar la IA");
         }
     } catch (error) {
         console.error("Error Gemini API:", error);
@@ -256,14 +266,24 @@ async function fetchUserProfile() {
         if (currentProfile.gender) $("userGender").value = currentProfile.gender;
         if (currentProfile.activity) $("userActivity").value = currentProfile.activity;
         if (currentProfile.isManual && currentProfile.goal) $("userManualGoal").value = currentProfile.goal;
+        if (currentProfile.apiKey && $("userApiKey")) $("userApiKey").value = currentProfile.apiKey;
 
         const badge = $("profileStatusBadge");
         if (badge) badge.textContent = currentProfile.isManual ? "Meta Manual" : "Meta Sugerida";
+    } else {
+        const savedKey = localStorage.getItem("gemini_api_key");
+        if (savedKey && $("userApiKey")) $("userApiKey").value = savedKey;
     }
 }
 
 async function saveUserProfileCloud(profileData) {
     if (!currentUser) return;
+    
+    // Preservar la API Key ingresada
+    const apiKey = $("userApiKey")?.value.trim() || "";
+    profileData.apiKey = apiKey;
+    if (apiKey) localStorage.setItem("gemini_api_key", apiKey);
+
     currentProfile = profileData;
 
     const { error } = await supabaseClient
@@ -519,30 +539,6 @@ function createMeals() {
     });
 }
 
-/* ---------------------------------------------------------
-   CONFIGURACIÓN Y GUARDADO DE LA API KEY EN LOCALSTORAGE
-   --------------------------------------------------------- */
-
-function loadStoredApiKey() {
-    const savedKey = localStorage.getItem("user_gemini_key");
-    if (savedKey && $("userApiKey")) {
-        $("userApiKey").value = savedKey;
-    }
-}
-
-function setupApiKeyEvents() {
-    $("btnSaveApiKey")?.addEventListener("click", () => {
-        const keyInput = $("userApiKey")?.value.trim();
-        if (!keyInput) {
-            alert("Por favor ingresá una API Key válida.");
-            return;
-        }
-        localStorage.setItem("user_gemini_key", keyInput);
-        GEMINI_API_KEY = keyInput;
-        showToast("🔑 API Key guardada");
-    });
-}
-
 function setupProfileEvents() {
     $("btnCalcSuggested")?.addEventListener("click", () => {
         const weight = parseFloat($("userWeight").value);
@@ -574,6 +570,21 @@ function setupProfileEvents() {
             goal: manualGoal,
             isManual: true
         });
+    });
+
+    $("btnSaveApiKey")?.addEventListener("click", () => {
+        const key = $("userApiKey")?.value.trim();
+        if (!key) { alert("Ingresá una clave válida."); return; }
+        
+        localStorage.setItem("gemini_api_key", key);
+        if (currentUser) {
+            saveUserProfileCloud({
+                ...(currentProfile || {}),
+                apiKey: key
+            });
+        } else {
+            showToast("🔑 Key guardada localmente");
+        }
     });
 }
 
@@ -615,8 +626,6 @@ function init() {
     createMeals();
     setupEvents();
     setupProfileEvents();
-    setupApiKeyEvents();
-    loadStoredApiKey();
     setupAuth();
 }
 
