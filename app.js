@@ -50,7 +50,7 @@ function emptyRecord() {
 }
 
 /* ---------------------------------------------------------
-   INTEGRACIÓN CON GEMINI IA (CÁLCULO DE CALORÍAS)
+   INTEGRACIÓN CON GEMINI IA (CÁLCULO DE CALORÍAS CON FALLBACK)
    --------------------------------------------------------- */
 
 function getActiveApiKey() {
@@ -76,43 +76,50 @@ async function estimateCaloriesAI(mealId) {
 
     showToast("✨ Consultando a la IA...");
 
-    try {
-        const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
+    // Modelos a probar en orden por si alguno falla o expira
+    const availableModels = [
+        "gemini-1.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash"
+    ];
 
-        // Se usa el endpoint alias gemini-flash para asegurar compatibilidad continua
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+    const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
 
-        const result = await response.json();
-        
-        if (result.error) {
-            console.error("API Error:", result.error);
-            showToast(`❌ Error: ${result.error.message || 'Petición denegada'}`);
-            return;
-        }
+    let success = false;
 
-        if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
-            const responseText = result.candidates[0].content.parts[0].text.trim();
-            const estimatedCalories = parseInt(responseText.replace(/\D/g, ''), 10);
+    for (const model of availableModels) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-            if (!isNaN(estimatedCalories)) {
-                calInput.value = estimatedCalories;
-                updateSummary();
-                showToast(`✨ Estimación: ${estimatedCalories} kcal`);
-            } else {
-                showToast("❌ No se pudo interpretar la respuesta");
+            const result = await response.json();
+
+            if (response.ok && result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+                const responseText = result.candidates[0].content.parts[0].text.trim();
+                const estimatedCalories = parseInt(responseText.replace(/\D/g, ''), 10);
+
+                if (!isNaN(estimatedCalories)) {
+                    calInput.value = estimatedCalories;
+                    updateSummary();
+                    showToast(`✨ Estimación: ${estimatedCalories} kcal`);
+                    success = true;
+                    break;
+                }
+            } else if (result.error) {
+                console.warn(`Error con ${model}:`, result.error.message);
             }
-        } else {
-            showToast("❌ Error al consultar la IA");
+        } catch (err) {
+            console.warn(`Error de conexión con ${model}:`, err);
         }
-    } catch (error) {
-        console.error("Error Gemini API:", error);
-        showToast("❌ Error de conexión con la IA");
+    }
+
+    if (!success) {
+        showToast("❌ Error: Verificá tu API Key o conexión");
     }
 }
 
