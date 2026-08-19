@@ -5,7 +5,7 @@
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
 
-// Clave por defecto opcional (si el usuario no la guarda en su perfil)
+// Clave por defecto opcional
 let GEMINI_API_KEY = ""; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -79,7 +79,8 @@ async function estimateCaloriesAI(mealId) {
     try {
         const prompt = `Analiza la siguiente comida y devuelve ÚNICAMENTE un número entero estimado que represente el total de calorías (kcal). No agregues texto, explicaciones ni unidades, solo el número. Comida: "${description}"`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
+        // Se usa el endpoint alias gemini-flash para asegurar compatibilidad continua
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${encodeURIComponent(activeApiKey)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -278,8 +279,7 @@ async function fetchUserProfile() {
 
 async function saveUserProfileCloud(profileData) {
     if (!currentUser) return;
-    
-    // Preservar la API Key ingresada
+
     const apiKey = $("userApiKey")?.value.trim() || "";
     profileData.apiKey = apiKey;
     if (apiKey) localStorage.setItem("gemini_api_key", apiKey);
