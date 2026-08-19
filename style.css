@@ -1,131 +1,103 @@
-/* =========================================================
-   VARIABLES Y TEMAS (CLARO / OSCURO)
-   ========================================================= */
 :root {
-    --primary: #4F46E5;
-    --primary-hover: #4338CA;
-    --bg: #F8FAFC;
-    --surface: #FFFFFF;
-    --surface-soft: #F1F5F9;
-    --text: #0F172A;
-    --text-muted: #64748B;
-    --border: #E2E8F0;
-    --green-light: #DCFCE7;
-    --green-text: #166534;
-    --orange-light: #FFEDD5;
-    --orange-text: #9A3412;
-    --danger: #EF4444;
-    --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --bg-color: #f4f6f8;
+    --card-bg: #ffffff;
+    --text-color: #2c3e50;
+    --muted-color: #7f8c8d;
+    --primary-color: #3498db;
+    --primary-hover: #2980b9;
+    --accent-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --border-color: #e2e8f0;
+    --input-bg: #ffffff;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 body.dark {
-    --bg: #0F172A;
-    --surface: #1E293B;
-    --surface-soft: #334155;
-    --text: #F8FAFC;
-    --text-muted: #94A3B8;
-    --border: #334155;
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-color: #f8fafc;
+    --muted-color: #94a3b8;
+    --primary-color: #3b82f6;
+    --primary-hover: #60a5fa;
+    --accent-color: #10b981;
+    --danger-color: #ef4444;
+    --border-color: #334155;
+    --input-bg: #0f172a;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
-/* =========================================================
-   ESTILOS GENERALES Y ESTRUCTURA
-   ========================================================= */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    background-color: var(--bg);
-    color: var(--text);
-    padding: 1.5rem 1rem;
-    transition: background-color 0.2s, color 0.2s;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 15px;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-.container {
-    max-width: 800px;
+.app-container {
+    max-width: 600px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 15px;
 }
 
-/* =========================================================
-   ENCABEZADO Y CARDS
-   ========================================================= */
-.header {
+/* TOP BAR */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.top-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.user-badge {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* CARDS */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card h3 {
+    font-size: 1.1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.header h1 {
-    font-size: 1.8rem;
-    font-weight: 800;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    box-shadow: var(--shadow);
-}
-
-.card h2 {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-    color: var(--text);
-}
-
-.muted {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.badge {
-    background: var(--surface-soft);
-    color: var(--text-muted);
-    padding: 0.25rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-/* =========================================================
-   INPUTS Y FORMULARIOS
-   ========================================================= */
-.date-selector {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-weight: 600;
-}
-
-input[type="text"],
-input[type="date"], 
-input[type="number"], 
-input[type="time"], 
-input[type="email"], 
-input[type="password"], 
-select, 
-textarea {
-    background: var(--surface-soft);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.6rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
+/* INPUTS & BUTTONS */
+input, select, textarea {
     width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 0.95rem;
+    outline: none;
 }
 
 textarea {
@@ -133,258 +105,277 @@ textarea {
     min-height: 60px;
 }
 
-/* =========================================================
-   RESUMEN DEL DÍA Y ANILLO PROGRESIVO
-   ========================================================= */
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    text-align: center;
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 600;
+    transition: opacity 0.2s, background-color 0.2s;
 }
 
-.summary-card {
-    background: var(--surface-soft);
-    padding: 1rem;
-    border-radius: var(--radius);
+button:hover { opacity: 0.9; }
+
+.btn-primary { background: var(--primary-color); color: #fff; width: 100%; }
+.btn-secondary { background: var(--border-color); color: var(--text-color); }
+.btn-danger { background: var(--danger-color); color: #fff; width: 100%; }
+.btn-icon { background: transparent; font-size: 1.2rem; padding: 4px 8px; }
+.btn-link { background: none; color: var(--primary-color); padding: 0; }
+
+.action-buttons {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    gap: 10px;
+}
+
+/* MODALES */
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
     justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 15px;
 }
 
-.summary-card .icon { font-size: 1.5rem; }
-.summary-card h3 { font-size: 0.9rem; color: var(--text-muted); margin: 0.25rem 0; }
-.big-stat { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
-
-.ring-container {
-    width: 90px;
-    height: 90px;
-    margin-bottom: 0.5rem;
-}
-
-.progress-ring {
+.modal-content {
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 16px;
     width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: conic-gradient(var(--primary) var(--progress), var(--border) 0deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-width: 480px;
+    box-shadow: var(--shadow);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-.ring-inner {
-    width: 76px;
-    height: 76px;
-    background: var(--surface);
-    border-radius: 50%;
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.close-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted-color);
+}
+
+.modal-body {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    gap: 15px;
 }
 
-.ring-value { font-size: 0.8rem; font-weight: 700; }
-.ring-sub { font-size: 0.7rem; color: var(--text-muted); }
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-/* =========================================================
-   COMIDAS Y ACTIVIDAD FÍSICA
-   ========================================================= */
+.divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.row-flex {
+    display: flex;
+    gap: 8px;
+}
+
+/* COMIDAS & IA */
 .meal-form {
     display: flex;
-    gap: 1rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .meal-form:last-child { border-bottom: none; }
-.meal-icon { font-size: 1.5rem; padding-top: 0.2rem; }
-.meal-content { flex: 1; }
+
+.meal-icon { font-size: 1.8rem; }
+.meal-content { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
 .meal-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.4rem;
 }
-.meal-title { margin-bottom: 0; }
-.meal-inputs-container { display: flex; gap: 0.5rem; }
-.meal-input { flex: 2; }
-.meal-cal-input { flex: 1; max-width: 110px; }
 
 .btn-ai {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    color: white;
-    border: none;
-    padding: 0.25rem 0.6rem;
+    background: #8e44ad;
+    color: #fff;
     font-size: 0.75rem;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.1s ease, opacity 0.2s ease;
+    padding: 4px 8px;
 }
 
-.btn-ai:hover {
-    opacity: 0.95;
-    transform: translateY(-1px);
-}
-
-.btn-ai:active {
-    transform: translateY(0);
-}
-
-.activity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-}
-
-.activity-box {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
+.meal-inputs-container {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    gap: 8px;
+}
+
+.meal-input { flex: 2; }
+.meal-cal-input { flex: 1; }
+
+/* ACTIVIDAD FÍSICA */
+.activity-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .btn-toggle {
+    background: var(--border-color);
+    color: var(--text-color);
+    flex: 1;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    background: var(--surface-soft);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
 }
 
 .btn-toggle.active {
-    background: var(--green-light);
-    color: var(--green-text);
-    border-color: var(--green-text);
+    background: var(--accent-color);
+    color: #fff;
 }
 
-.input-group { display: flex; flex-direction: column; gap: 0.3rem; }
-.input-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
-.input-group-row { display: flex; gap: 0.5rem; }
+/* ANILLO Y RESUMEN */
+.ring-container {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
 
-/* =========================================================
-   AYUNO INTERMITENTE Y PERFIL
-   ========================================================= */
-.fasting-inputs { display: flex; gap: 1rem; margin-bottom: 1rem; }
-.fasting-display { background: var(--surface-soft); padding: 1rem; border-radius: 8px; }
-.fasting-time { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-.progress-bar-bg { background: var(--border); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem; }
-.progress-bar-fill { background: var(--primary); height: 100%; transition: width 0.3s; }
+.progress-ring {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary-color) var(--progress), var(--border-color) 0deg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-.profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; }
-.full-width { grid-column: 1 / -1; }
-.profile-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
-.manual-goal-box { display: flex; gap: 0.5rem; flex: 1; }
+.ring-inner {
+    width: 110px;
+    height: 110px;
+    background: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 
-/* =========================================================
-   BOTONES
-   ========================================================= */
-button { cursor: pointer; border: none; font-weight: 600; border-radius: 8px; transition: opacity 0.2s; }
-button:hover { opacity: 0.9; }
+#calorieTotal { font-size: 1.2rem; font-weight: bold; }
+.percent { color: var(--primary-color); font-weight: bold; }
 
-.btn-primary { background: var(--primary); color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
-.btn-secondary { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); padding: 0.6rem 1rem; }
-.btn-danger { background: var(--danger); color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
-.btn-icon { background: var(--surface-soft); border: 1px solid var(--border); font-size: 1.2rem; padding: 0.4rem 0.6rem; border-radius: 50%; }
+.summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    text-align: center;
+}
 
-.main-actions { display: flex; gap: 1rem; }
-.main-actions button { flex: 1; }
+.summary-item {
+    background: var(--bg-color);
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+}
 
-/* =========================================================
-   GRÁFICO SEMANAL E HISTORIAL
-   ========================================================= */
+/* AYUNO */
+.fasting-inputs { display: flex; gap: 10px; }
+.fasting-display { text-align: center; }
+.big-time { font-size: 1.5rem; font-weight: bold; }
+
+.bar-container {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.3s;
+}
+
+/* GRÁFICO */
 .chart-container {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     height: 160px;
-    padding-top: 1rem;
-    border-bottom: 1px solid var(--border);
+    padding-top: 10px;
 }
 
 .chart-column {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
     flex: 1;
+    gap: 4px;
+    font-size: 0.75rem;
 }
 
 .chart-bar {
-    width: 60%;
-    max-width: 30px;
-    background: var(--primary);
-    border-radius: 4px 4px 0 0;
-    transition: height 0.4s ease;
+    width: 14px;
+    background: var(--primary-color);
+    border-radius: 4px;
+    transition: height 0.3s;
 }
 
-.chart-column span { font-size: 0.75rem; color: var(--text-muted); }
-
-.history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.history-list { display: flex; flex-direction: column; gap: 0.5rem; }
+/* HISTORIAL */
 .history-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--surface-soft);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.history-date { font-weight: 700; font-size: 0.9rem; }
-.history-details { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
-.history-open { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+.history-date { font-weight: bold; }
+.history-details { font-size: 0.8rem; color: var(--muted-color); }
 
-/* =========================================================
-   TOAST Y AUTENTICACIÓN (LOGIN MODAL)
-   ========================================================= */
+/* TOAST */
 .toast {
     position: fixed;
     bottom: 20px;
-    right: 20px;
-    background: var(--text);
-    color: var(--bg);
-    padding: 0.8rem 1.2rem;
-    border-radius: 8px;
-    font-weight: 600;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
     opacity: 0;
-    transform: translateY(10px);
     transition: all 0.3s;
-    pointer-events: none;
+    z-index: 2000;
 }
 
-.toast.show { opacity: 1; transform: translateY(0); }
-
-.auth-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
 }
 
-.auth-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 2rem;
-    border-radius: var(--radius);
-    width: 90%;
-    max-width: 380px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+.badge {
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    align-self: flex-start;
 }
 
-.auth-card h2 { margin-bottom: 1.5rem; text-align: center; }
-.auth-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; text-align: center; }
-.auth-toggle { margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
-.btn-link { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0 0.25rem; }
+.muted { color: var(--muted-color); font-size: 0.85rem; }
+.error-text { color: var(--danger-color); font-size: 0.85rem; margin-top: 8px; }
