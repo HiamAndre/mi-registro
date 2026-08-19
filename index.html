@@ -5,12 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Registro Diario</title>
     <link rel="stylesheet" href="style.css">
-    <!-- SDK Oficial de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <div class="container">
+    <!-- MODAL DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="authModal" class="auth-overlay">
+        <div class="auth-card">
+            <h2 id="authTitle">🔑 Iniciar Sesión</h2>
+            <form id="authForm">
+                <div class="input-group">
+                    <label for="authEmail">Correo electrónico:</label>
+                    <input type="email" id="authEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="input-group">
+                    <label for="authPassword">Contraseña:</label>
+                    <input type="password" id="authPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="authSubmitBtn" class="btn-primary" style="margin-top: 1rem;">Entrar</button>
+            </form>
+            <p id="authError" class="auth-error"></p>
+            <div class="auth-toggle">
+                <span id="authToggleText">¿No tenés cuenta?</span>
+                <button id="btnToggleAuthMode" class="btn-link">Registrate acá</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL DE LA APP -->
+    <div id="appContainer" class="container" style="display: none;">
         
         <!-- ENCABEZADO -->
         <header class="header">
@@ -19,7 +42,8 @@
                 <p id="prettyDate" class="muted">Cargando fecha...</p>
             </div>
             <div class="header-actions">
-                <span id="cloudStatus" class="badge">Conectando...</span>
+                <span id="userEmailBadge" class="badge">Usuario</span>
+                <button id="logoutBtn" class="btn-secondary" title="Cerrar sesión">🚪 Salir</button>
                 <button id="themeToggle" class="btn-icon" title="Cambiar tema">🌙</button>
             </div>
         </header>
@@ -35,9 +59,7 @@
         <!-- RESUMEN DE HOY -->
         <section class="card">
             <h2>📊 Resumen del Día</h2>
-            
             <div class="summary-grid">
-                <!-- Anillo / Progreso de Calorías -->
                 <div class="summary-card">
                     <div class="ring-container">
                         <div id="calorieRing" class="progress-ring" style="--progress: 0%;">
@@ -49,24 +71,18 @@
                     </div>
                     <p class="muted">Meta: <span id="calorieGoal">2000</span> kcal</p>
                 </div>
-
-                <!-- Gimnasio -->
                 <div class="summary-card">
                     <span class="icon">🏋️</span>
                     <h3>Gimnasio</h3>
                     <p id="gymSummary" class="big-stat">No</p>
                     <p id="gymMinutesSummary" class="muted">Sin actividad</p>
                 </div>
-
-                <!-- Carrera -->
                 <div class="summary-card">
                     <span class="icon">🏃</span>
                     <h3>Carrera</h3>
                     <p id="runningSummary" class="big-stat">0 km</p>
                     <p id="runningTimeSummary" class="muted">Sin carrera</p>
                 </div>
-
-                <!-- Ayuno -->
                 <div class="summary-card">
                     <span class="icon">⏱️</span>
                     <h3>Ayuno Intermitente</h3>
@@ -85,9 +101,7 @@
         <!-- REGISTRO DE ACTIVIDAD FÍSICA -->
         <section class="card">
             <h2>💪 Actividad Física</h2>
-            
             <div class="activity-grid">
-                <!-- Gimnasio -->
                 <div class="activity-box">
                     <button id="gymButton" class="btn-toggle">
                         <span>🏋️ Gimnasio</span>
@@ -98,8 +112,6 @@
                         <input type="number" id="gymMinutes" min="0" placeholder="Ej: 45">
                     </div>
                 </div>
-
-                <!-- Running -->
                 <div class="activity-box">
                     <button id="runButton" class="btn-toggle">
                         <span>🏃 Carrera</span>
@@ -117,18 +129,15 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Notas de la Actividad -->
             <div class="input-group" style="margin-top: 1rem;">
                 <label for="activityNotes">Notas de la sesión / entrenamiento:</label>
-                <textarea id="activityNotes" placeholder="Ej: Buenas sensaciones, entrenamiento de piernas y hombros..."></textarea>
+                <textarea id="activityNotes" placeholder="Ej: Buenas sensaciones, entrenamiento de piernas..."></textarea>
             </div>
         </section>
 
         <!-- AYUNO INTERMITENTE -->
         <section class="card">
             <h2>⏱️ Ayuno Intermitente (Meta: 16 horas)</h2>
-            
             <div class="fasting-inputs">
                 <div class="input-group">
                     <label for="fastingStart">Inicio del ayuno:</label>
@@ -139,7 +148,6 @@
                     <input type="time" id="fastingEnd">
                 </div>
             </div>
-
             <div class="fasting-display">
                 <div class="fasting-time">
                     <span>Tiempo total de ayuno:</span>
@@ -152,10 +160,9 @@
             </div>
         </section>
 
-        <!-- PERFIL Y META CALÓRICA DINÁMICA -->
+        <!-- PERFIL -->
         <section class="card">
             <h2>⚙️ Perfil y Meta de Calorías</h2>
-            
             <div class="profile-grid">
                 <div class="input-group">
                     <label for="userWeight">Peso (kg):</label>
@@ -187,7 +194,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="profile-actions">
                 <button id="btnCalcSuggested" class="btn-secondary">🧮 Calcular Meta Sugerida</button>
                 <div class="manual-goal-box">
@@ -198,13 +204,13 @@
             <p class="muted" style="margin-top: 0.5rem;">Estado: <span id="profileStatusBadge" class="badge">Estándar (2000 kcal)</span></p>
         </section>
 
-        <!-- BOTONES DE ACCIÓN PRINCIPALES -->
+        <!-- ACCIONES -->
         <div class="main-actions">
             <button id="saveButton" class="btn-primary">💾 Guardar Día en Supabase</button>
             <button id="clearButton" class="btn-danger">🗑️ Borrar Día</button>
         </div>
 
-        <!-- HISTORIAL Y GRÁFICO SEMANAL -->
+        <!-- GRÁFICO E HISTORIAL -->
         <section class="card">
             <h2>📈 Consumo de Calorías (Últimos 7 días)</h2>
             <div id="weeklyChart" class="chart-container"></div>
@@ -220,7 +226,6 @@
 
     </div>
 
-    <!-- TOAST DE NOTIFICACIÓN -->
     <div id="toast" class="toast">✓ Guardado</div>
 
     <script src="app.js"></script>

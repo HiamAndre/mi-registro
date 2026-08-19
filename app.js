@@ -1,8 +1,7 @@
 /* =========================================================
-   MI REGISTRO — APP.JS (100% SUPABASE)
+   MI REGISTRO — APP.JS (SUPABASE + AUTHENTICATION)
    ========================================================= */
 
-// ⚠️ PEGÁ TUS CREDENCIALES DE SUPABASE AQUÍ:
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
 
@@ -10,7 +9,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DEFAULT_CALORIE_GOAL = 2000;
 const FASTING_GOAL = 16;
-let currentProfile = null; // Cache en memoria
+let currentProfile = null;
+let currentUser = null;
+let isSignUpMode = false;
 
 const meals = [
     { id: "breakfast", name: "Desayuno", icon: "🌅" },
@@ -20,18 +21,11 @@ const meals = [
     { id: "other", name: "Otros", icon: "🍎" }
 ];
 
-/* ---------------------------------------------------------
-   HELPERS & UTILS
-   --------------------------------------------------------- */
-
 function $(id) { return document.getElementById(id); }
 
 function today() {
     const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function getSelectedDate() { return $("date")?.value || today(); }
@@ -51,6 +45,178 @@ function emptyRecord() {
         activityNotes: "", fastingStart: "", fastingEnd: ""
     };
 }
+
+/* ---------------------------------------------------------
+   AUTENTICACIÓN Y SESIONES
+   --------------------------------------------------------- */
+
+function setupAuth() {
+    $("authForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = $("authEmail").value;
+        const password = $("authPassword").value;
+        const errorMsg = $("authError");
+        errorMsg.textContent = "";
+
+        if (isSignUpMode) {
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            } else {
+                alert("¡Cuenta creada con éxito! Si tenés confirmación activada, revisá tu mail. Ya podés entrar.");
+                toggleAuthMode();
+            }
+        } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                errorMsg.textContent = "❌ " + error.message;
+            }
+        }
+    });
+
+    $("btnToggleAuthMode")?.addEventListener("click", toggleAuthMode);
+
+    $("logoutBtn")?.addEventListener("click", async () => {
+        await supabaseClient.auth.signOut();
+    });
+
+    // Escuchar cambios de sesión en tiempo real
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            currentUser = session.user;
+            $("authModal").style.display = "none";
+            $("appContainer").style.display = "flex";
+            $("userEmailBadge").textContent = currentUser.email;
+            loadAppContent();
+        } else {
+            currentUser = null;
+            $("authModal").style.display = "flex";
+            $("appContainer").style.display = "none";
+        }
+    });
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    $("authTitle").textContent = isSignUpMode ? "📝 Crear Cuenta" : "🔑 Iniciar Sesión";
+    $("authSubmitBtn").textContent = isSignUpMode ? "Registrarse" : "Entrar";
+    $("authToggleText").textContent = isSignUpMode ? "¿Ya tenés cuenta?" : "¿No tenés cuenta?";
+    $("btnToggleAuthMode").textContent = isSignUpMode ? "Iniciá sesión" : "Registrate acá";
+    $("authError").textContent = "";
+}
+
+/* ---------------------------------------------------------
+   OPERACIONES EN SUPABASE
+   --------------------------------------------------------- */
+
+async function saveDayCloud() {
+    if (!currentUser) return;
+    const date = getSelectedDate();
+    const data = getFormData();
+
+    const { error } = await supabaseClient
+        .from('registros')
+        .upsert({ date: date, data: data, user_id: currentUser.id }, { onConflict: 'date,user_id' });
+
+    if (error) {
+        console.error("Error al guardar:", error);
+        showToast("❌ Error al guardar");
+    } else {
+        showToast("⚡ Guardado en Supabase");
+        updateEverything();
+    }
+}
+
+async function loadRecord() {
+    if (!currentUser) return;
+    const date = getSelectedDate();
+
+    const { data } = await supabaseClient
+        .from('registros')
+        .select('data')
+        .eq('date', date)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+    const record = (data && data.data) ? data.data : emptyRecord();
+
+    meals.forEach(m => {
+        if ($(`${m.id}Text`)) $(`${m.id}Text`).value = record[m.id] || "";
+        if ($(`${m.id}Cal`)) $(`${m.id}Cal`).value = record[m.id + "Cal"] || "";
+    });
+
+    if ($("gymMinutes")) $("gymMinutes").value = record.gymMinutes || "";
+    if ($("runningKm")) $("runningKm").value = record.runningKm || "";
+    if ($("runningMinutes")) $("runningMinutes").value = record.runningMinutes || "";
+    if ($("activityNotes")) $("activityNotes").value = record.activityNotes || "";
+    if ($("fastingStart")) $("fastingStart").value = record.fastingStart || "";
+    if ($("fastingEnd")) $("fastingEnd").value = record.fastingEnd || "";
+
+    updateActivityButton($("gymButton"), record.gym);
+    updateActivityButton($("runButton"), record.running);
+
+    updateEverything();
+}
+
+async function clearDay() {
+    if (!currentUser || !confirm("¿Querés eliminar los datos de este día?")) return;
+
+    const date = getSelectedDate();
+    const { error } = await supabaseClient
+        .from('registros')
+        .delete()
+        .eq('date', date)
+        .eq('user_id', currentUser.id);
+
+    if (error) {
+        showToast("❌ Error al borrar");
+    } else {
+        showToast("Día eliminado");
+        loadRecord();
+    }
+}
+
+async function fetchUserProfile() {
+    if (!currentUser) return;
+
+    const { data } = await supabaseClient
+        .from('perfil')
+        .select('data')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+    if (data && data.data) {
+        currentProfile = data.data;
+        if (currentProfile.weight) $("userWeight").value = currentProfile.weight;
+        if (currentProfile.height) $("userHeight").value = currentProfile.height;
+        if (currentProfile.age) $("userAge").value = currentProfile.age;
+        if (currentProfile.gender) $("userGender").value = currentProfile.gender;
+        if (currentProfile.activity) $("userActivity").value = currentProfile.activity;
+        if (currentProfile.isManual && currentProfile.goal) $("userManualGoal").value = currentProfile.goal;
+
+        const badge = $("profileStatusBadge");
+        if (badge) badge.textContent = currentProfile.isManual ? "Meta Manual" : "Meta Sugerida";
+    }
+}
+
+async function saveUserProfileCloud(profileData) {
+    if (!currentUser) return;
+    currentProfile = profileData;
+
+    const { error } = await supabaseClient
+        .from('perfil')
+        .upsert({ id: currentUser.id, data: profileData }, { onConflict: 'id' });
+
+    if (!error) {
+        showToast("⚡ Perfil guardado");
+        fetchUserProfile();
+        updateEverything();
+    }
+}
+
+/* ---------------------------------------------------------
+   HELPERS CÁLCULOS E INTERFAZ
+   --------------------------------------------------------- */
 
 function getFormData() {
     return {
@@ -94,190 +260,15 @@ function formatDuration(minutes) {
     return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }
 
-/* ---------------------------------------------------------
-   OPERACIONES EN SUPABASE (REGISTROS Y PERFIL)
-   --------------------------------------------------------- */
-
-async function saveDayCloud() {
-    const date = getSelectedDate();
-    if (!date) return;
-    const data = getFormData();
-
-    const { error } = await supabaseClient
-        .from('registros')
-        .upsert({ date: date, data: data }, { onConflict: 'date' });
-
-    if (error) {
-        console.error("Error guardando en Supabase:", error);
-        showToast("❌ Error al guardar en la nube");
-    } else {
-        showToast("⚡ Guardado en Supabase");
-        updateEverything();
-    }
-}
-
-async function loadRecord() {
-    const date = getSelectedDate();
-    
-    const { data, error } = await supabaseClient
-        .from('registros')
-        .select('data')
-        .eq('date', date)
-        .maybeSingle();
-
-    const record = (data && data.data) ? data.data : emptyRecord();
-
-    meals.forEach(m => {
-        if ($(`${m.id}Text`)) $(`${m.id}Text`).value = record[m.id] || "";
-        if ($(`${m.id}Cal`)) $(`${m.id}Cal`).value = record[m.id + "Cal"] || "";
-    });
-
-    if ($("gymMinutes")) $("gymMinutes").value = record.gymMinutes || "";
-    if ($("runningKm")) $("runningKm").value = record.runningKm || "";
-    if ($("runningMinutes")) $("runningMinutes").value = record.runningMinutes || "";
-    if ($("activityNotes")) $("activityNotes").value = record.activityNotes || "";
-    if ($("fastingStart")) $("fastingStart").value = record.fastingStart || "";
-    if ($("fastingEnd")) $("fastingEnd").value = record.fastingEnd || "";
-
-    updateActivityButton($("gymButton"), record.gym);
-    updateActivityButton($("runButton"), record.running);
-
-    updateEverything();
-}
-
-async function clearDay() {
-    if (!confirm("¿Querés eliminar los datos de este día en Supabase?")) return;
-
-    const date = getSelectedDate();
-    const { error } = await supabaseClient
-        .from('registros')
-        .delete()
-        .eq('date', date);
-
-    if (error) {
-        showToast("❌ Error al borrar");
-    } else {
-        showToast("Día eliminado");
-        loadRecord();
-    }
-}
-
-async function fetchUserProfile() {
-    const { data } = await supabaseClient
-        .from('perfil')
-        .select('data')
-        .eq('id', 'user_main')
-        .maybeSingle();
-
-    if (data && data.data) {
-        currentProfile = data.data;
-        if (currentProfile.weight) $("userWeight").value = currentProfile.weight;
-        if (currentProfile.height) $("userHeight").value = currentProfile.height;
-        if (currentProfile.age) $("userAge").value = currentProfile.age;
-        if (currentProfile.gender) $("userGender").value = currentProfile.gender;
-        if (currentProfile.activity) $("userActivity").value = currentProfile.activity;
-        if (currentProfile.isManual && currentProfile.goal) $("userManualGoal").value = currentProfile.goal;
-
-        const badge = $("profileStatusBadge");
-        if (badge) badge.textContent = currentProfile.isManual ? "Meta Manual" : "Meta Sugerida";
-    }
-}
-
-async function saveUserProfileCloud(profileData) {
-    currentProfile = profileData;
-    const { error } = await supabaseClient
-        .from('perfil')
-        .upsert({ id: 'user_main', data: profileData }, { onConflict: 'id' });
-
-    if (!error) {
-        showToast("⚡ Perfil guardado");
-        fetchUserProfile();
-        updateEverything();
-    }
-}
-
 function getCalorieGoal() {
     return (currentProfile && currentProfile.goal) ? currentProfile.goal : DEFAULT_CALORIE_GOAL;
-}
-
-/* ---------------------------------------------------------
-   EVENTOS DE PERFIL Y METAS
-   --------------------------------------------------------- */
-
-function setupProfileEvents() {
-    $("btnCalcSuggested")?.addEventListener("click", () => {
-        const weight = parseFloat($("userWeight").value);
-        const height = parseFloat($("userHeight").value);
-        const age = parseInt($("userAge").value);
-        const gender = $("userGender").value;
-        const activity = parseFloat($("userActivity").value);
-
-        if (!weight || !height || !age) {
-            alert("Completa peso, altura y edad.");
-            return;
-        }
-
-        let bmr = (gender === "hombre")
-            ? 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
-            : 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
-
-        const suggestedGoal = Math.round(bmr * activity);
-
-        saveUserProfileCloud({ weight, height, age, gender, activity, goal: suggestedGoal, isManual: false });
-    });
-
-    $("btnSaveManual")?.addEventListener("click", () => {
-        const manualGoal = parseInt($("userManualGoal").value);
-        if (!manualGoal || manualGoal <= 0) { alert("Ingresá un valor válido."); return; }
-
-        saveUserProfileCloud({
-            weight: parseFloat($("userWeight").value) || null,
-            height: parseFloat($("userHeight").value) || null,
-            age: parseInt($("userAge").value) || null,
-            gender: $("userGender")?.value,
-            activity: parseFloat($("userActivity")?.value),
-            goal: manualGoal,
-            isManual: true
-        });
-    });
-}
-
-/* ---------------------------------------------------------
-   INTERFAZ Y COMPONENTES
-   --------------------------------------------------------- */
-
-function createMeals() {
-    const container = $("meals");
-    if (!container) return;
-    container.innerHTML = "";
-
-    meals.forEach(m => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "meal-form";
-        wrapper.innerHTML = `
-            <div class="meal-icon">${m.icon}</div>
-            <div class="meal-content">
-                <div class="meal-title"><strong>${m.name}</strong></div>
-                <div class="meal-inputs-container">
-                    <textarea id="${m.id}Text" class="meal-input" placeholder="¿Qué comiste?"></textarea>
-                    <input id="${m.id}Cal" class="meal-cal-input" type="number" min="0" placeholder="Calorías">
-                </div>
-            </div>
-        `;
-        container.appendChild(wrapper);
-    });
 }
 
 function updateActivityButton(button, active) {
     if (!button) return;
     button.classList.toggle("active", Boolean(active));
-
-    if (button.id === "gymButton" && $("gymStatus")) {
-        $("gymStatus").textContent = active ? "Registrado ✓" : "No fui";
-    }
-    if (button.id === "runButton" && $("runStatus")) {
-        $("runStatus").textContent = active ? "Registrado ✓" : "No corrí";
-    }
+    if (button.id === "gymButton" && $("gymStatus")) $("gymStatus").textContent = active ? "Registrado ✓" : "No fui";
+    if (button.id === "runButton" && $("runStatus")) $("runStatus").textContent = active ? "Registrado ✓" : "No corrí";
 }
 
 function updateSummary() {
@@ -326,9 +317,12 @@ function updateFasting() {
 }
 
 async function renderHistory() {
+    if (!currentUser) return;
+
     const { data: rows } = await supabaseClient
         .from('registros')
         .select('date, data')
+        .eq('user_id', currentUser.id)
         .order('date', { ascending: false })
         .limit(30);
 
@@ -339,7 +333,7 @@ async function renderHistory() {
     if ($("daysCount")) $("daysCount").textContent = `${count} ${count === 1 ? "día" : "días"}`;
 
     if (!rows || !rows.length) {
-        history.innerHTML = `<p class="muted">Todavía no tenés días registrados en Supabase.</p>`;
+        history.innerHTML = `<p class="muted">Todavía no tenés días registrados.</p>`;
         return;
     }
 
@@ -374,6 +368,8 @@ async function renderHistory() {
 }
 
 async function renderChart() {
+    if (!currentUser) return;
+
     const selectedDate = new Date(getSelectedDate() + "T12:00:00");
     const calorieGoal = getCalorieGoal();
     const daysKeys = [];
@@ -388,6 +384,7 @@ async function renderChart() {
     const { data: rows } = await supabaseClient
         .from('registros')
         .select('date, data')
+        .eq('user_id', currentUser.id)
         .in('date', daysKeys.map(d => d.key));
 
     const recordsMap = {};
@@ -395,10 +392,7 @@ async function renderChart() {
 
     const days = daysKeys.map(d => {
         const record = recordsMap[d.key] || emptyRecord();
-        return {
-            calories: calculateCalories(record),
-            label: d.label
-        };
+        return { calories: calculateCalories(record), label: d.label };
     });
 
     const maxCalories = Math.max(calorieGoal, ...days.map(d => d.calories));
@@ -435,24 +429,70 @@ function showToast(message) {
     window.toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
-function setupTheme() {
-    $("themeToggle")?.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        const dark = document.body.classList.contains("dark");
-        $("themeToggle").textContent = dark ? "☀️" : "🌙";
+function createMeals() {
+    const container = $("meals");
+    if (!container) return;
+    container.innerHTML = "";
+
+    meals.forEach(m => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "meal-form";
+        wrapper.innerHTML = `
+            <div class="meal-icon">${m.icon}</div>
+            <div class="meal-content">
+                <div class="meal-title"><strong>${m.name}</strong></div>
+                <div class="meal-inputs-container">
+                    <textarea id="${m.id}Text" class="meal-input" placeholder="¿Qué comiste?"></textarea>
+                    <input id="${m.id}Cal" class="meal-cal-input" type="number" min="0" placeholder="Calorías">
+                </div>
+            </div>
+        `;
+        container.appendChild(wrapper);
+    });
+}
+
+function setupProfileEvents() {
+    $("btnCalcSuggested")?.addEventListener("click", () => {
+        const weight = parseFloat($("userWeight").value);
+        const height = parseFloat($("userHeight").value);
+        const age = parseInt($("userAge").value);
+        const gender = $("userGender").value;
+        const activity = parseFloat($("userActivity").value);
+
+        if (!weight || !height || !age) { alert("Completa peso, altura y edad."); return; }
+
+        let bmr = (gender === "hombre")
+            ? 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
+            : 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+
+        const suggestedGoal = Math.round(bmr * activity);
+        saveUserProfileCloud({ weight, height, age, gender, activity, goal: suggestedGoal, isManual: false });
+    });
+
+    $("btnSaveManual")?.addEventListener("click", () => {
+        const manualGoal = parseInt($("userManualGoal").value);
+        if (!manualGoal || manualGoal <= 0) { alert("Ingresá un valor válido."); return; }
+
+        saveUserProfileCloud({
+            weight: parseFloat($("userWeight").value) || null,
+            height: parseFloat($("userHeight").value) || null,
+            age: parseInt($("userAge").value) || null,
+            gender: $("userGender")?.value,
+            activity: parseFloat($("userActivity")?.value),
+            goal: manualGoal,
+            isManual: true
+        });
     });
 }
 
 function setupEvents() {
     $("gymButton")?.addEventListener("click", () => {
-        const active = !$("gymButton").classList.contains("active");
-        updateActivityButton($("gymButton"), active);
+        updateActivityButton($("gymButton"), !$("gymButton").classList.contains("active"));
         updateSummary();
     });
 
     $("runButton")?.addEventListener("click", () => {
-        const active = !$("runButton").classList.contains("active");
-        updateActivityButton($("runButton"), active);
+        updateActivityButton($("runButton"), !$("runButton").classList.contains("active"));
         updateSummary();
     });
 
@@ -466,28 +506,24 @@ function setupEvents() {
     $("date")?.addEventListener("change", () => loadRecord());
     $("saveButton")?.addEventListener("click", () => saveDayCloud());
     $("clearButton")?.addEventListener("click", () => clearDay());
+    
+    $("themeToggle")?.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        $("themeToggle").textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    });
 }
 
-/* ---------------------------------------------------------
-   INICIALIZACIÓN
-   --------------------------------------------------------- */
-
-async function init() {
-    if ($("date")) $("date").value = today();
-
-    createMeals();
-    setupTheme();
-    setupEvents();
-    setupProfileEvents();
-
-    const badge = $("cloudStatus");
-    if (badge) {
-        badge.textContent = "⚡ Conectado a Supabase";
-        badge.style.background = "var(--green-light)";
-    }
-
+async function loadAppContent() {
     await fetchUserProfile();
     await loadRecord();
+}
+
+function init() {
+    if ($("date")) $("date").value = today();
+    createMeals();
+    setupEvents();
+    setupProfileEvents();
+    setupAuth();
 }
 
 document.addEventListener("DOMContentLoaded", init);

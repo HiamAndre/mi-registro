@@ -1,3 +1,6 @@
+/* =========================================================
+   VARIABLES Y TEMAS (CLARO / OSCURO)
+   ========================================================= */
 :root {
     --primary: #4F46E5;
     --primary-hover: #4338CA;
@@ -25,6 +28,9 @@ body.dark {
     --border: #334155;
 }
 
+/* =========================================================
+   ESTILOS GENERALES Y ESTRUCTURA
+   ========================================================= */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -47,7 +53,9 @@ body {
     gap: 1.5rem;
 }
 
-/* Header */
+/* =========================================================
+   ENCABEZADO Y CARDS
+   ========================================================= */
 .header {
     display: flex;
     justify-content: space-between;
@@ -65,7 +73,6 @@ body {
     gap: 0.75rem;
 }
 
-/* Cards */
 .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -94,7 +101,9 @@ body {
     font-weight: 600;
 }
 
-/* Controles de Fecha */
+/* =========================================================
+   INPUTS Y FORMULARIOS
+   ========================================================= */
 .date-selector {
     display: flex;
     align-items: center;
@@ -102,7 +111,13 @@ body {
     font-weight: 600;
 }
 
-input[type="date"], input[type="number"], input[type="time"], select, textarea {
+input[type="date"], 
+input[type="number"], 
+input[type="time"], 
+input[type="email"], 
+input[type="password"], 
+select, 
+textarea {
     background: var(--surface-soft);
     border: 1px solid var(--border);
     color: var(--text);
@@ -117,7 +132,9 @@ textarea {
     min-height: 60px;
 }
 
-/* Resumen Grid */
+/* =========================================================
+   RESUMEN DEL DÍA Y ANILLO PROGRESIVO
+   ========================================================= */
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -139,7 +156,6 @@ textarea {
 .summary-card h3 { font-size: 0.9rem; color: var(--text-muted); margin: 0.25rem 0; }
 .big-stat { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
 
-/* Ring de calorias */
 .ring-container {
     width: 90px;
     height: 90px;
@@ -170,7 +186,9 @@ textarea {
 .ring-value { font-size: 0.8rem; font-weight: 700; }
 .ring-sub { font-size: 0.7rem; color: var(--text-muted); }
 
-/* Comidas */
+/* =========================================================
+   COMIDAS Y ACTIVIDAD FÍSICA
+   ========================================================= */
 .meal-form {
     display: flex;
     gap: 1rem;
@@ -186,7 +204,6 @@ textarea {
 .meal-input { flex: 2; }
 .meal-cal-input { flex: 1; max-width: 110px; }
 
-/* Actividades */
 .activity-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -225,20 +242,23 @@ textarea {
 .input-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 .input-group-row { display: flex; gap: 0.5rem; }
 
-/* Ayuno */
+/* =========================================================
+   AYUNO INTERMITENTE Y PERFIL
+   ========================================================= */
 .fasting-inputs { display: flex; gap: 1rem; margin-bottom: 1rem; }
 .fasting-display { background: var(--surface-soft); padding: 1rem; border-radius: 8px; }
 .fasting-time { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
 .progress-bar-bg { background: var(--border); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem; }
 .progress-bar-fill { background: var(--primary); height: 100%; transition: width 0.3s; }
 
-/* Perfil */
 .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; }
 .full-width { grid-column: 1 / -1; }
 .profile-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
 .manual-goal-box { display: flex; gap: 0.5rem; flex: 1; }
 
-/* Botones */
+/* =========================================================
+   BOTONES
+   ========================================================= */
 button { cursor: pointer; border: none; font-weight: 600; border-radius: 8px; transition: opacity 0.2s; }
 button:hover { opacity: 0.9; }
 
@@ -250,7 +270,9 @@ button:hover { opacity: 0.9; }
 .main-actions { display: flex; gap: 1rem; }
 .main-actions button { flex: 1; }
 
-/* Gráfico semanal */
+/* =========================================================
+   GRÁFICO SEMANAL E HISTORIAL
+   ========================================================= */
 .chart-container {
     display: flex;
     justify-content: space-between;
@@ -278,7 +300,6 @@ button:hover { opacity: 0.9; }
 
 .chart-column span { font-size: 0.75rem; color: var(--text-muted); }
 
-/* Historial */
 .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .history-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .history-item {
@@ -294,7 +315,9 @@ button:hover { opacity: 0.9; }
 .history-details { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
 .history-open { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
-/* Toast */
+/* =========================================================
+   TOAST Y AUTENTICACIÓN (LOGIN MODAL)
+   ========================================================= */
 .toast {
     position: fixed;
     bottom: 20px;
@@ -311,3 +334,29 @@ button:hover { opacity: 0.9; }
 }
 
 .toast.show { opacity: 1; transform: translateY(0); }
+
+.auth-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.auth-card h2 { margin-bottom: 1.5rem; text-align: center; }
+.auth-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; text-align: center; }
+.auth-toggle { margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+.btn-link { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0 0.25rem; }
