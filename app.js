@@ -5,7 +5,6 @@
 const SUPABASE_URL = "https://xmjkzjvfpbsyypxbeixb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhtamt6anZmcGJzeXlweGJlaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMDI3MDksImV4cCI6MjEwMjY3ODcwOX0.VaTYKIICuzFXgVHWj-Rzvx2sQ9Fpr5eOdXh0c1XnMZA";
 
-// Clave por defecto opcional
 let GEMINI_API_KEY = ""; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -50,7 +49,7 @@ function emptyRecord() {
 }
 
 /* ---------------------------------------------------------
-   INTEGRACIÓN CON GEMINI IA (CÁLCULO DE CALORÍAS CON FALLBACK)
+   INTEGRACIÓN CON GEMINI IA
    --------------------------------------------------------- */
 
 function getActiveApiKey() {
@@ -70,13 +69,12 @@ async function estimateCaloriesAI(mealId) {
     const activeApiKey = getActiveApiKey();
 
     if (!activeApiKey) {
-        alert("Debes ingresar tu Gemini API Key en la sección de Perfil para usar esta función.");
+        alert("Debes ingresar tu Gemini API Key en el menú de Configuración.");
         return;
     }
 
     showToast("✨ Consultando a la IA...");
 
-    // Lista de modelos actualizada al modelo actual vigente
     const availableModels = [
         "gemini-3.6-flash"
     ];
@@ -544,6 +542,34 @@ function createMeals() {
     });
 }
 
+/* ---------------------------------------------------------
+   CONFIGURACIÓN Y MODAL DE PERFIL
+   --------------------------------------------------------- */
+
+function setupSettingsModal() {
+    const modal = $("settingsModal");
+    const openBtn = $("btnOpenSettings");
+    const closeBtn = $("btnCloseSettings");
+
+    if (openBtn && modal) {
+        openBtn.addEventListener("click", () => {
+            modal.style.display = "flex";
+        });
+    }
+
+    if (closeBtn && modal) {
+        closeBtn.addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+    }
+
+    window.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+}
+
 function setupProfileEvents() {
     $("btnCalcSuggested")?.addEventListener("click", () => {
         const weight = parseFloat($("userWeight").value);
@@ -630,6 +656,7 @@ function init() {
     if ($("date")) $("date").value = today();
     createMeals();
     setupEvents();
+    setupSettingsModal();
     setupProfileEvents();
     setupAuth();
 }
