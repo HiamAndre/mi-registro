@@ -360,7 +360,7 @@ button:hover { opacity: 0.9; }
     transition: all 0.3s;
     pointer-events: none;
 }
-
+ 
 .toast.show { opacity: 1; transform: translateY(0); }
 
 .auth-overlay {
