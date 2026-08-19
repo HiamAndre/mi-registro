@@ -13,7 +13,7 @@
     <div id="authModal" class="modal" style="display: flex;">
         <div class="modal-content auth-box">
             <h2 id="authTitle">🔑 Iniciar Sesión</h2>
-            <form id="authForm">
+            <form id="authForm" class="auth-form">
                 <input type="text" id="authEmail" placeholder="Usuario o Email" required>
                 <input type="password" id="authPassword" placeholder="Contraseña" required>
                 <button type="submit" id="authSubmitBtn" class="btn-primary">Entrar</button>
@@ -89,7 +89,7 @@
                 </section>
 
                 <!-- COMIDAS -->
-                <section class="card">
+                <section class="card meals-card">
                     <h3>🍽️ Comidas del día</h3>
                     <div id="meals"></div>
                 </section>
@@ -166,7 +166,7 @@
                 </section>
 
                 <!-- HISTORIAL -->
-                <section class="card">
+                <section class="card history-card">
                     <div class="history-header">
                         <h3>📜 Historial (<span id="daysCount">0 días</span>)</h3>
                     </div>

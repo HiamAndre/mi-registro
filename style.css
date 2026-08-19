@@ -41,11 +41,12 @@ body {
 }
 
 .app-container {
-    max-width: 600px;
+    max-width: 1100px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 15px;
+    padding-bottom: 30px;
 }
 
 /* TOP BAR */
@@ -164,7 +165,7 @@ button:hover { opacity: 0.9; }
     gap: 10px;
 }
 
-/* MODALES */
+/* MODALES & AUTH */
 .modal {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -185,6 +186,35 @@ button:hover { opacity: 0.9; }
     box-shadow: var(--shadow);
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.auth-box {
+    max-width: 380px;
+    text-align: center;
+}
+
+.auth-box h2 {
+    margin-bottom: 20px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.auth-toggle {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.auth-toggle .btn-link {
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .modal-header {
@@ -229,6 +259,12 @@ button:hover { opacity: 0.9; }
 }
 
 /* COMIDAS & IA */
+#meals {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 .meal-form {
     display: flex;
     gap: 12px;
@@ -275,6 +311,7 @@ button:hover { opacity: 0.9; }
     flex: 1;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .btn-toggle.active {
@@ -345,7 +382,6 @@ button:hover { opacity: 0.9; }
 .bar-fill {
     height: 100%;
     background: var(--accent-color);
-    transition: width 0.3s;
 }
 
 /* ESTADÍSTICAS GENERALES */
@@ -398,7 +434,6 @@ button:hover { opacity: 0.9; }
     width: 14px;
     background: var(--primary-color);
     border-radius: 4px;
-    transition: height 0.3s;
 }
 
 /* HISTORIAL */
@@ -451,3 +486,167 @@ button:hover { opacity: 0.9; }
 
 .muted { color: var(--muted-color); font-size: 0.85rem; }
 .error-text { color: var(--danger-color); font-size: 0.85rem; margin-top: 8px; }
+
+/* =========================================================
+   ANIMACIONES Y EFECTOS VISUALES
+   ========================================================= */
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes growUp {
+    from { height: 0; }
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.tab-content.active {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal {
+    transition: opacity 0.25s ease;
+}
+
+.modal-content {
+    animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+button, input, select, textarea {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+    transform: scale(0.96);
+}
+
+.btn-toggle {
+    transition: background-color 0.3s ease, transform 0.15s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.chart-bar {
+    transform-origin: bottom;
+    animation: growUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.progress-ring {
+    transition: background 0.5s ease-out;
+}
+
+.bar-fill {
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-ai.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    animation: pulseGlow 1s infinite;
+}
+
+.history-item {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* =========================================================
+   ADAPTACIÓN DASHBOARD PARA PANTALLAS GRANDES (PC / TABLET)
+   ========================================================= */
+
+@media (min-width: 768px) {
+    body {
+        padding: 24px;
+    }
+
+    .modal-content {
+        max-width: 520px;
+        padding: 30px;
+    }
+
+    .auth-box {
+        max-width: 400px;
+    }
+
+    #tabRegister {
+        display: none;
+    }
+
+    /* Layout en Grid tipo Dashboard para Registro */
+    #tabRegister.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .date-card {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 15px;
+    }
+
+    .date-card input[type="date"] {
+        max-width: 200px;
+    }
+
+    .meals-card {
+        grid-column: 1 / -1;
+    }
+
+    #meals {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+    }
+
+    .meal-form {
+        border-bottom: none;
+        background: var(--bg-color);
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+
+    .action-buttons {
+        grid-column: 1 / -1;
+        max-width: 500px;
+        margin: 10px auto 0 auto;
+        width: 100%;
+    }
+
+    /* Layout para Estadísticas */
+    #tabStats.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .history-card {
+        grid-column: 1 / -1;
+    }
+
+    .chart-container {
+        height: 220px;
+    }
+
+    .chart-bar {
+        width: 22px;
+    }
+}

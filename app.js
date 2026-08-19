@@ -72,7 +72,6 @@ function setupTabs() {
         tabStats.classList.add("active");
         tabRegister.classList.remove("active");
         
-        // Cargar estadísticas actualizadas al cambiar a esta pestaña
         renderHistoryAndStats();
         renderChart();
     });
@@ -98,6 +97,7 @@ async function estimateCaloriesAI(mealId) {
     const textInput = $(`${mealId}Text`);
     const calInput = $(`${mealId}Cal`);
     const description = textInput?.value.trim();
+    const btn = textInput?.closest('.meal-content')?.querySelector('.btn-ai');
 
     if (!description) {
         alert("Escribí qué comiste primero para poder estimar las calorías.");
@@ -111,6 +111,7 @@ async function estimateCaloriesAI(mealId) {
         return;
     }
 
+    if (btn) btn.classList.add("loading");
     showToast("✨ Consultando a la IA...");
 
     const availableModels = [
@@ -151,6 +152,8 @@ async function estimateCaloriesAI(mealId) {
             console.warn(`Error de conexión con ${model}:`, err);
         }
     }
+
+    if (btn) btn.classList.remove("loading");
 
     if (!success) {
         showToast("❌ Error: Verificá tu API Key o conexión");
@@ -493,7 +496,6 @@ async function renderHistoryAndStats() {
         history.appendChild(item);
     });
 
-    // Actualizar cajas de estadísticas
     if ($("avgCalories")) $("avgCalories").textContent = `${Math.round(totalCal / rows.length)} kcal`;
     if ($("totalKm")) $("totalKm").textContent = `${totalKm.toFixed(1)} km`;
     if ($("totalGymDays")) $("totalGymDays").textContent = `${totalGymDays} días`;
@@ -606,22 +608,28 @@ function setupSettingsModal() {
     const openBtn = $("btnOpenSettings");
     const closeBtn = $("btnCloseSettings");
 
-    if (openBtn && modal) {
-        openBtn.addEventListener("click", () => {
-            modal.style.display = "flex";
-        });
-    }
-
-    if (closeBtn && modal) {
-        closeBtn.addEventListener("click", () => {
+    const closeModal = () => {
+        if (!modal) return;
+        modal.style.opacity = "0";
+        setTimeout(() => {
             modal.style.display = "none";
-        });
-    }
+        }, 200);
+    };
+
+    const openModal = () => {
+        if (!modal) return;
+        modal.style.display = "flex";
+        modal.style.opacity = "0";
+        setTimeout(() => {
+            modal.style.opacity = "1";
+        }, 10);
+    };
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
     window.addEventListener("click", (e) => {
-        if (e.target === modal) {
-            modal.style.display = "none";
-        }
+        if (e.target === modal) closeModal();
     });
 }
 
